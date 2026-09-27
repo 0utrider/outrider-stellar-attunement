@@ -28,7 +28,7 @@ game.modules.get("outrider-stellar-attunement").api.setAttunement(null, "photon"
 
 ## Macro compendium
 
-**Stellar Attunement Macros** (`outrider-stellar-attunement.outrider-stellar-attunement-macros`), in the brand-violet **Outrider's Mods › Stellar Attunement** compendium folder. The shared **Outrider's Mods** folder (id `outridersModsCmp`) is created by whichever Outrider module syncs first, and reused by the rest. Players can view it and drag macros to their hotbar.
+**Stellar Attunement Macros** (`outrider-stellar-attunement.outrider-stellar-attunement-macros`), directly in the brand-violet **Outrider's Mods** compendium folder (no per-module subfolder; the pack's subtitle names the module). The shared **Outrider's Mods** folder (id `outridersModsCmp`) is created by whichever Outrider module syncs first, and reused by the rest. Players can view it and drag macros to their hotbar.
 
 | Macro | Does |
 |---|---|

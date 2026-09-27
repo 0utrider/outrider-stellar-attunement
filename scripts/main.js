@@ -12,18 +12,9 @@
  * Optional: with Sequencer + JB2A active, a persistent JB2A token border marks the attunement.
  */
 
+import { packsNeedPlacement, supported, syncModulePacks } from "./lib/outrider-mods.js";
+
 const MOD = "outrider-stellar-attunement";
-const BRAND_COLOR = "#7000d6"; // Outrider brand (Electric Violet Deep)
-const MACRO_PACK = `${MOD}.outrider-stellar-attunement-macros`;
-// Shared "Outrider's Mods" root folders: same literal ids in every Outrider module (Foundry ids are exactly 16 chars).
-const SHARED_MODS_FOLDER_IDS = {
-  Compendium: "outridersModsCmp",
-  Macro: "outridersModsMac",
-  JournalEntry: "outridersModsJrn",
-  Actor: "outridersModsAct",
-  Item: "outridersModsItm",
-  Scene: "outridersModsScn",
-};
 const OPTION = "stellar-attunement";
 const STATES = ["unattuned", "graviton", "photon"];
 const LABELS = { unattuned: "Unattuned", graviton: "Graviton-Attuned", photon: "Photon-Attuned" };
@@ -459,51 +450,23 @@ Hooks.once("init", () => {
 
 // ─── Branding sync (Outrider module convention) ─────────────────────────────
 
-/** Find or create the shared "Outrider's Mods" folder for a sidebar type (any Outrider module may own it). */
-async function getOrCreateSharedRoot(type) {
-  const id = SHARED_MODS_FOLDER_IDS[type];
-  let root = game.folders.get(id);
-  if (root) return root;
-  try {
-    root = await Folder.implementation.create(
-      { _id: id, name: "Outrider's Mods", type, color: BRAND_COLOR, sorting: "a" },
-      { keepId: true },
-    );
-  } catch (err) {
-    root = game.folders.get(id); // another Outrider module won the race
-    if (!root) throw err;
-  }
-  return root ?? game.folders.get(id);
-}
-
 /**
- * Brand this module's pack folder and nest it under "Outrider's Mods".
- * packFolders color only applies when Foundry first creates the folder, so color it here if uncolored.
- * Only touches the folder if it is still ours (name from packFolders) and only nests it if top-level:
- * a folder the GM moved or recolored is left alone.
+ * Compendium Packs tab: pack goes directly in "Outrider's Mods" (shared helper, scripts/lib/outrider-mods.js).
+ * The old "Stellar Attunement" subfolder is emptied and removed.
  */
-async function brandPackFolder(pack) {
-  const folder = pack?.folder;
-  if (!folder) return;
-  const own = Array.from(game.modules.get(MOD).packFolders ?? []).some((f) => f.name === folder.name);
-  if (!own) return;
-  const patch = {};
-  if (!folder.color) patch.color = BRAND_COLOR;
-  if (!folder.folder) patch.folder = (await getOrCreateSharedRoot("Compendium")).id;
-  if (Object.keys(patch).length) await folder.update(patch);
-}
-
 async function syncWorldContent() {
-  await brandPackFolder(game.packs.get(MACRO_PACK));
+  await syncModulePacks(MOD, { folderNames: ["Stellar Attunement", "Outrider's Stellar Attunement"] });
 }
 
 Hooks.once("ready", async () => {
   game.modules.get(MOD).api = { cycle, setAttunement, configure, getState: (a) => getState(resolveActor(a)), artFor, reconcileScene, playAttack, syncWorldContent };
 
-  // Version-gated: runs on install and on each update, never on plain reloads. Active GM only.
+  // Version-gated, plus self-heal if a pack has lost its folder. Active GM only.
+  if (!supported()) return;
   if (!game.users.activeGM?.isSelf) return;
   const version = game.modules.get(MOD).version;
-  if (game.settings.get(MOD, "syncedVersion") === version) return;
+  const updated = game.settings.get(MOD, "syncedVersion") !== version;
+  if (!updated && !packsNeedPlacement(MOD)) return;
   try {
     await syncWorldContent();
     await game.settings.set(MOD, "syncedVersion", version);
