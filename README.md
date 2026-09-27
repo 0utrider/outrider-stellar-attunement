@@ -26,9 +26,9 @@ game.modules.get("outrider-stellar-attunement").api.cycle("Jaxon \"Jax\"");
 game.modules.get("outrider-stellar-attunement").api.setAttunement(null, "photon");
 ```
 
-## Macro compendium
+## Macros
 
-**Stellar Attunement Macros** (`outrider-stellar-attunement.outrider-stellar-attunement-macros`), directly in the brand-violet **Outrider's Mods** compendium folder (no per-module subfolder; the pack's subtitle names the module). The shared **Outrider's Mods** folder (id `outridersModsCmp`) is created by whichever Outrider module syncs first, and reused by the rest. Players can view it and drag macros to their hotbar.
+On install and on every update, the module copies its macros from the compendium into the world, in the **Macros** sidebar under **Outrider's Mods > Stellar Attunement**. They default to Observer, so players can see and run them without a GM having to share them by hand. The compendium itself, **Stellar Attunement Macros** (`outrider-stellar-attunement.outrider-stellar-attunement-macros`), lives directly in the brand-violet **Outrider's Mods** compendium folder, alongside the rest of the Outrider family's packs.
 
 | Macro | Does |
 |---|---|
@@ -37,7 +37,7 @@ game.modules.get("outrider-stellar-attunement").api.setAttunement(null, "photon"
 | Unattuned | Set Unattuned |
 | Cycle Attunement | Run the cycle above |
 
-Each acts on the controlled token, or your assigned character. Pack source lives in `src/packs/`, and `packs/` is built with `@foundryvtt/foundryvtt-cli` `compilePack`.
+Each acts on the controlled token, or your assigned character. If a GM changes a macro's ownership or moves it, that choice is kept on later syncs. Pack source lives in `src/packs/`, and `packs/` is built with `@foundryvtt/foundryvtt-cli` `compilePack`.
 
 ## JB2A token borders
 
