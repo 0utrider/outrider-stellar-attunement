@@ -2,7 +2,7 @@
   "id": "outrider-stellar-attunement",
   "title": "Outrider's Stellar Attunement",
   "description": "Solarian Stellar Attunement helper for Starfinder 2e: cycles Unattuned \u2192 Graviton \u21c4 Photon \u2192 Unattuned, and swaps token art to match whenever attunement changes (macro, Token HUD, or character sheet). Optional JB2A token borders and Solar Weapon / Solar Flare attack animations via Sequencer.",
-  "version": "1.5.0",
+  "version": "1.0.0",
   "authors": [
     {
       "name": "David Outrider"
