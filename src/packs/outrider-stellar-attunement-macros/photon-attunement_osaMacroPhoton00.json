@@ -1,0 +1,15 @@
+{
+  "_id": "osaMacroPhoton00",
+  "_key": "!macros!osaMacroPhoton00",
+  "name": "Photon Attunement",
+  "type": "script",
+  "img": "icons/magic/fire/barrier-wall-flame-ring-yellow.webp",
+  "scope": "global",
+  "command": "// Outrider's Stellar Attunement. Uses the controlled token, or your assigned character.\nconst api = game.modules.get(\"outrider-stellar-attunement\")?.api;\nif (!api) return ui.notifications.warn(\"Outrider's Stellar Attunement is not active.\");\nawait api.setAttunement(null, \"photon\");\n",
+  "folder": null,
+  "sort": 200000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {}
+}

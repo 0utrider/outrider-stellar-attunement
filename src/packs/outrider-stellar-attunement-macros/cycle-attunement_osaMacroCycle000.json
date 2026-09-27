@@ -1,0 +1,15 @@
+{
+  "_id": "osaMacroCycle000",
+  "_key": "!macros!osaMacroCycle000",
+  "name": "Cycle Attunement",
+  "type": "script",
+  "img": "icons/magic/symbols/runes-star-orange-purple.webp",
+  "scope": "global",
+  "command": "// Outrider's Stellar Attunement. Uses the controlled token, or your assigned character.\nconst api = game.modules.get(\"outrider-stellar-attunement\")?.api;\nif (!api) return ui.notifications.warn(\"Outrider's Stellar Attunement is not active.\");\n// Unattuned \u2192 Graviton; attuned \u2192 swap to the other; second click \u2192 Unattuned.\nawait api.cycle();\n",
+  "folder": null,
+  "sort": 400000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {}
+}

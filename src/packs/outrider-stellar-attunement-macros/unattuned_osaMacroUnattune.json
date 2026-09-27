@@ -1,0 +1,15 @@
+{
+  "_id": "osaMacroUnattune",
+  "_key": "!macros!osaMacroUnattune",
+  "name": "Unattuned",
+  "type": "script",
+  "img": "icons/skills/movement/ball-spinning-blue.webp",
+  "scope": "global",
+  "command": "// Outrider's Stellar Attunement. Uses the controlled token, or your assigned character.\nconst api = game.modules.get(\"outrider-stellar-attunement\")?.api;\nif (!api) return ui.notifications.warn(\"Outrider's Stellar Attunement is not active.\");\nawait api.setAttunement(null, \"unattuned\");\n",
+  "folder": null,
+  "sort": 300000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {}
+}

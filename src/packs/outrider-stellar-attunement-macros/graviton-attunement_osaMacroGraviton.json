@@ -1,0 +1,15 @@
+{
+  "_id": "osaMacroGraviton",
+  "_key": "!macros!osaMacroGraviton",
+  "name": "Graviton Attunement",
+  "type": "script",
+  "img": "icons/magic/unholy/barrier-shield-glowing-pink.webp",
+  "scope": "global",
+  "command": "// Outrider's Stellar Attunement. Uses the controlled token, or your assigned character.\nconst api = game.modules.get(\"outrider-stellar-attunement\")?.api;\nif (!api) return ui.notifications.warn(\"Outrider's Stellar Attunement is not active.\");\nawait api.setAttunement(null, \"graviton\");\n",
+  "folder": null,
+  "sort": 100000,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {}
+}

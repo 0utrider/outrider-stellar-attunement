@@ -1,0 +1,67 @@
+{
+  "id": "outrider-stellar-attunement",
+  "title": "Outrider's Stellar Attunement",
+  "description": "Solarian Stellar Attunement helper for Starfinder 2e: cycles Unattuned \u2192 Graviton \u21c4 Photon \u2192 Unattuned, and swaps token art to match whenever attunement changes (macro, Token HUD, or character sheet). Optional JB2A token borders and Solar Weapon / Solar Flare attack animations via Sequencer.",
+  "version": "1.5.0",
+  "authors": [
+    {
+      "name": "David Outrider"
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "sf2e",
+        "type": "system",
+        "compatibility": {
+          "minimum": "1.0.0"
+        }
+      }
+    ],
+    "recommends": [
+      {
+        "id": "sequencer",
+        "type": "module",
+        "reason": "Attunement token borders and attack animations"
+      },
+      {
+        "id": "jb2a_patreon",
+        "type": "module",
+        "reason": "Token border animations (free JB2A_DnD5e may lack some variants)"
+      }
+    ]
+  },
+  "esmodules": [
+    "scripts/main.js"
+  ],
+  "styles": [
+    "styles/main.css"
+  ],
+  "packs": [
+    {
+      "name": "outrider-stellar-attunement-macros",
+      "label": "Stellar Attunement Macros",
+      "path": "packs/outrider-stellar-attunement-macros",
+      "type": "Macro",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "flags": {}
+    }
+  ],
+  "packFolders": [
+    {
+      "name": "Stellar Attunement",
+      "sorting": "a",
+      "color": "#7000d6",
+      "packs": [
+        "outrider-stellar-attunement-macros"
+      ]
+    }
+  ]
+}
