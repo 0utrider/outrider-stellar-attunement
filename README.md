@@ -1,5 +1,11 @@
 # Outrider's Stellar Attunement
 
+<div align="center">
+
+[![Part of Outrider's Pathfinder Tools](https://img.shields.io/badge/Part%20of-Outrider%27s%20Pathfinder%20Tools-7000d6?style=for-the-badge)](https://github.com/0utrider/pathfinder)
+
+</div>
+
 SF2e Solarian helper. Cycles Stellar Attunement and keeps token art in sync.
 
 ## Cycle
