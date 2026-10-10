@@ -3,10 +3,13 @@
 <div align="center">
 
 [![Part of Outrider's Pathfinder Tools](https://img.shields.io/badge/Part%20of-Outrider%27s%20Pathfinder%20Tools-7000d6?style=for-the-badge)](https://github.com/0utrider/pathfinder)
+[![Available on Foundry Package Browser](https://img.shields.io/badge/Foundry-Package%20Page-7000d6?style=for-the-badge)](https://foundryvtt.com/packages/outrider-stellar-attunement)
 
 </div>
 
 SF2e Solarian helper. Cycles Stellar Attunement and keeps token art in sync.
+
+<p align="center"><img src="docs/demo-jb2a.webp" alt="A Solarian token cycling through Stellar Attunement, with the module's JB2A token border and attack animation playing" width="480"></p>
 
 ## Cycle
 
