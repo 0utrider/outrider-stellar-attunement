@@ -5,7 +5,7 @@
   "type": "script",
   "img": "icons/magic/fire/barrier-wall-flame-ring-yellow.webp",
   "scope": "global",
-  "command": "// Outrider's Stellar Attunement. Uses the controlled token, or your assigned character.\nconst api = game.modules.get(\"outrider-stellar-attunement\")?.api;\nif (!api) return ui.notifications.warn(\"Outrider's Stellar Attunement is not active.\");\nawait api.setAttunement(null, \"photon\");\n",
+  "command": "// Sets Stellar Attunement to Photon on the controlled token or your assigned character.\n// Part of Outrider's Mods - 0utrider.github.io/pathfinder\nconst api = game.modules.get(\"outrider-stellar-attunement\")?.api;\nif (!api) return ui.notifications.warn(\"Outrider's Stellar Attunement is not active.\");\nawait api.setAttunement(null, \"photon\");\n",
   "folder": null,
   "sort": 200000,
   "ownership": {

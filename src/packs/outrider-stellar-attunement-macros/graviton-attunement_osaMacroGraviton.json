@@ -5,7 +5,7 @@
   "type": "script",
   "img": "icons/magic/unholy/barrier-shield-glowing-pink.webp",
   "scope": "global",
-  "command": "// Outrider's Stellar Attunement. Uses the controlled token, or your assigned character.\nconst api = game.modules.get(\"outrider-stellar-attunement\")?.api;\nif (!api) return ui.notifications.warn(\"Outrider's Stellar Attunement is not active.\");\nawait api.setAttunement(null, \"graviton\");\n",
+  "command": "// Sets Stellar Attunement to Graviton on the controlled token or your assigned character.\n// Part of Outrider's Mods - 0utrider.github.io/pathfinder\nconst api = game.modules.get(\"outrider-stellar-attunement\")?.api;\nif (!api) return ui.notifications.warn(\"Outrider's Stellar Attunement is not active.\");\nawait api.setAttunement(null, \"graviton\");\n",
   "folder": null,
   "sort": 100000,
   "ownership": {
