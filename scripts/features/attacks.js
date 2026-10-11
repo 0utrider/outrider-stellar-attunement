@@ -1,0 +1,105 @@
+import { LABELS, MODULE_ID, OPTION, STATES } from "../constants.js";
+import { featureHooks } from "../feature-hooks.js";
+import { sequencerReady } from "../sequencer.js";
+import { getState } from "../state.js";
+
+/**
+ * Attack animations. Solarian strikes are synthetic weapons (from Strike rule elements), so
+ * Automated Animations can't attach to them. Instead we watch attack-roll chat cards.
+ */
+
+const ATTACKS = {
+  "solar-weapon": {
+    label: "Solar Weapon",
+    graviton: "jb2a.energy_strands.range.multiple.dark_purple.01",
+    photon: "jb2a.scorching_ray.02.orange",
+  },
+  "solar-flare": {
+    label: "Solar Flare",
+    graviton: "jb2a.fireball.beam.dark_purple",
+    photon: "jb2a.fireball.beam.orange",
+  },
+};
+
+const hooks = featureHooks("attacks");
+
+function attackFromMessage(message) {
+  const ctx = message.flags?.sf2e?.context ?? message.flags?.pf2e?.context;
+  if (ctx?.type !== "attack-roll") return null;
+  const opts = new Set(ctx.options ?? []);
+  const slug = Object.keys(ATTACKS).find((k) => opts.has(`item:slug:${k}`));
+  if (!slug) return null;
+  // Attunement as of the roll; fall back to the live state.
+  const state = STATES.find((s) => opts.has(`${OPTION}:${s}`)) ?? getState(message.actor);
+  return { slug, state, ctx };
+}
+
+function sourceTokenFor(message) {
+  const id = message.speaker?.token;
+  return (id && canvas.tokens.get(id)) || message.actor?.getActiveTokens?.(true)[0] || null;
+}
+
+function targetTokenFor(message, ctx) {
+  const uuid = ctx.target?.token;
+  const doc = uuid ? fromUuidSync(uuid) : null;
+  if (doc?.parent === canvas.scene && doc.object) return doc.object;
+  return message.author?.targets?.first() ?? null;
+}
+
+export async function playAttack(message) {
+  if (!game.settings.get(MODULE_ID, "attacks") || typeof Sequencer === "undefined") return;
+  const hit = attackFromMessage(message);
+  if (!hit || hit.state === "unattuned") return;
+  const path = game.settings.get(MODULE_ID, `attack.${hit.slug}.${hit.state}`)?.trim();
+  if (!path) return;
+  if (!Sequencer.Database.entryExists(path)) return console.warn(`${MODULE_ID} | JB2A entry not found: ${path}`);
+
+  const source = sourceTokenFor(message);
+  const target = targetTokenFor(message, hit.ctx);
+  if (!source || !target || source === target) return;
+
+  const missed = ["failure", "criticalFailure"].includes(hit.ctx.outcome);
+  await new Sequence({ moduleName: MODULE_ID })
+    .effect()
+      .file(path)
+      .atLocation(source)
+      .stretchTo(target)
+      .missed(missed)
+    .play();
+}
+
+/** One Sequencer path per attack and attunement, after the on/off switch. */
+const settings = {
+  attacks: {
+    name: "JB2A attack animations",
+    hint: "Play a ranged animation from the Solarian to the target when Solar Weapon or Solar Flare is rolled while attuned. Misses animate as misses.",
+    scope: "world", config: true, type: Boolean, default: true,
+  },
+};
+for (const [slug, cfg] of Object.entries(ATTACKS)) {
+  for (const state of ["graviton", "photon"]) {
+    settings[`attack.${slug}.${state}`] = {
+      name: `${cfg.label} - ${LABELS[state]}`,
+      hint: "Sequencer database path for a ranged effect. Blank = no animation.",
+      scope: "world", config: true, type: String, default: cfg[state],
+    };
+  }
+}
+
+export const attacks = {
+  id: "attacks",
+  settings,
+  init() {
+    hooks.clear();
+
+    // Only the rolling client plays (Sequencer broadcasts to everyone).
+    hooks.on("createChatMessage", (message) => {
+      if (!sequencerReady() || message.author?.id !== game.user.id || !attackFromMessage(message)) return;
+      // Let Dice So Nice finish its 3D roll so the animation lands with the result.
+      const dice = game.modules.get("dice-so-nice")?.active && game.dice3d
+        ? game.dice3d.waitFor3DAnimationByMessageID(message.id).catch(() => {})
+        : Promise.resolve();
+      dice.then(() => playAttack(message)).catch((err) => console.warn(`${MODULE_ID} | Attack animation failed`, err));
+    });
+  },
+};
