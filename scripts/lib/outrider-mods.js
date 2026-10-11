@@ -9,6 +9,9 @@
  * subfolder (each pack already shows its module as a subtitle). Per-module folders from older
  * versions are emptied into the root and deleted once empty.
  *
+ * Version 3 (v2 plus macrosNeedSync and syncModuleMacros). Check a module's copy is current with
+ * `cmp ~/projects/om-MASTER/outrider-mods.js scripts/lib/outrider-mods.js`; bump this line on any change.
+ *
  * Rules (see HANDOFF-OutriderMods-branding.md):
  * - Only move things that are top-level or in this module's own folder; anything the GM put
  *   in some other folder is left alone.
@@ -110,6 +113,73 @@ export function syncModulePacks(moduleId, { folderNames = [] } = {}) {
     }
     for (const folder of emptied.values()) {
       if (!game.packs.some((p) => p.folder?.id === folder.id) && !hasSubfolders(folder)) await folder.delete();
+    }
+  });
+}
+
+/**
+ * Self-heal check for the ready hook: true if any Macro in `moduleId`'s own Macro compendium
+ * pack(s) has no matching synced world copy yet (never synced, or its world copy was deleted),
+ * or has one sitting at the top level (the shared folder was deleted, which keeps its contents
+ * and drops them there). Run the sync when this is true even if the version gate says it
+ * already ran. A copy the GM moved into some other folder does not trigger it.
+ */
+export function macrosNeedSync(moduleId) {
+  const packs = game.packs.filter(
+    (p) => p.metadata.packageType === "module" && p.metadata.packageName === moduleId && p.metadata.type === "Macro",
+  );
+  if (!packs.length) return false;
+  const synced = new Map(
+    game.macros.filter((m) => m.getFlag(moduleId, "syncedFrom")).map((m) => [m.getFlag(moduleId, "syncedFrom"), m]),
+  );
+  return packs.some((pack) => pack.index.some((entry) => !synced.get(entry._id)?.folder));
+}
+
+/**
+ * Copies every Macro in `moduleId`'s own Macro compendium pack(s) into a matching world Macro
+ * document inside Outrider's Mods, creating or updating as needed so a module's QoL macros are
+ * reachable from the Macros sidebar tab directly, not only by browsing the compendium.
+ *
+ * A world copy is matched back to its compendium source by `flags[moduleId].syncedFrom`, the
+ * source macro's own compendium id - never by name, since nothing stops two macros sharing one.
+ * `name`, `img` and `command` are kept in sync on every call; a hotbar slot pointing at the synced
+ * copy (rather than a dragged, frozen text copy) picks up a content change immediately. A macro
+ * removed from the compendium pack is left in the world untouched, never deleted - this assumes
+ * nothing about whether a GM has customized it since. Ownership is set once, on create, and never
+ * overwritten. `folder` follows the same rule as packs: a copy at the top level goes (back) into
+ * Outrider's Mods, a copy in some other folder the GM chose is left alone.
+ */
+export function syncModuleMacros(moduleId) {
+  return enqueue(async () => {
+    const packs = game.packs.filter(
+      (p) => p.metadata.packageType === "module" && p.metadata.packageName === moduleId && p.metadata.type === "Macro",
+    );
+    if (!packs.length) return;
+    const root = await getOrCreateSharedRoot("Macro");
+    const existing = new Map(
+      game.macros
+        .filter((m) => m.getFlag(moduleId, "syncedFrom"))
+        .map((m) => [m.getFlag(moduleId, "syncedFrom"), m]),
+    );
+    for (const pack of packs) {
+      for (const source of await pack.getDocuments()) {
+        const data = { name: source.name, img: source.img, command: source.command };
+        const current = existing.get(source.id);
+        if (current) {
+          const stale = ["name", "img", "command"].some((key) => current[key] !== data[key]);
+          const adrift = !current.folder;
+          if (stale || adrift) await current.update(adrift ? { ...data, folder: root } : data);
+        } else {
+          await Macro.implementation.create({
+            ...data,
+            type: source.type,
+            scope: source.scope,
+            folder: root,
+            ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
+            flags: { [moduleId]: { syncedFrom: source.id } },
+          });
+        }
+      }
     }
   });
 }
