@@ -82,6 +82,28 @@ export class StellarAttunementSettings extends ApplicationV2 {
     };
   }
 
+  async _onRender(context, options) {
+    await super._onRender(context, options);
+    const form = this.element;
+    // The mouse wheel scrolls the window, it never changes a value the pointer happens to cross.
+    form.addEventListener("wheel", (event) => {
+      if (event.target.closest?.("range-picker, input[type=number], select")) {
+        event.stopImmediatePropagation();
+        event.target.blur?.();
+      }
+    }, { capture: true, passive: true });
+    // Mark each field that differs from what the window opened with.
+    const read = (el) => (el.type === "checkbox" ? el.checked : el.value);
+    const start = new Map([...form.elements].filter((el) => el.name).map((el) => [el.name, read(el)]));
+    const mark = (event) => {
+      const el = event.target;
+      if (!start.has(el.name)) return;
+      el.closest(".form-group")?.classList.toggle("osa-changed", read(el) !== start.get(el.name));
+    };
+    form.addEventListener("input", mark);
+    form.addEventListener("change", mark);
+  }
+
   /** The input for one setting. */
   static #control({ key, data, value, pickers }, id) {
     if (data.choices) {
@@ -234,6 +256,7 @@ export class StellarAttunementSettings extends ApplicationV2 {
       previewOptions: () => this.#previewOptions(key),
       onPick: (path) => {
         input.value = path;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
       },
     }).render({ force: true });
   }

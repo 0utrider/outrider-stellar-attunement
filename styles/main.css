@@ -118,3 +118,15 @@
   display: flex;
   gap: 0.35rem;
 }
+
+/* A field changed since the window opened */
+.osa-settings .form-group.osa-changed {
+  box-shadow: inset 3px 0 0 #7000d6;
+  padding-left: 0.5rem;
+}
+.osa-settings .form-group.osa-changed > label::after {
+  content: " (changed)";
+  font-size: var(--font-size-11, 0.7rem);
+  font-style: italic;
+  color: color-mix(in srgb, #7000d6 65%, currentColor);
+}
