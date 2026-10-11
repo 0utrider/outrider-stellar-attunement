@@ -1,6 +1,6 @@
 import { MODULE_ID } from "../constants.js";
 import { featureHooks } from "../feature-hooks.js";
-import { markSequencerReady, sequencerReady } from "../sequencer.js";
+import { animationsInstalled, markSequencerReady, sequencerReady } from "../sequencer.js";
 import { getState } from "../state.js";
 
 /**
@@ -10,15 +10,11 @@ import { getState } from "../state.js";
 
 const BORDER_NAME = `${MODULE_ID}.border`;
 const BORDER_FILE = /token_border|Token_Border/;
-const JB2A_IDS = ["jb2a_patreon", "JB2A_DnD5e"];
 
 const hooks = featureHooks("borders");
 
 export function bordersAvailable() {
-  return game.settings.get(MODULE_ID, "borders")
-    && game.modules.get("sequencer")?.active
-    && JB2A_IDS.some((id) => game.modules.get(id)?.active)
-    && typeof Sequencer !== "undefined";
+  return game.settings.get(MODULE_ID, "borders") && animationsInstalled();
 }
 
 function borderPathFor(state) {
@@ -75,7 +71,7 @@ function borderSignature(path, layout) {
   return `${path}|${layout.scale}|${layout.below}|${layout.above}`;
 }
 
-async function syncBorder(token, state) {
+async function drawBorder(token, state) {
   const path = borderPathFor(state);
   const layout = path && borderLayout(token, state);
   const sig = path && borderSignature(path, layout);
@@ -98,6 +94,18 @@ async function syncBorder(token, state) {
       .fadeOut(300);
   if (layout.above) effect.aboveInterface();
   await effect.play();
+}
+
+/**
+ * One border change at a time per token. Two changes that overlap would both read the same
+ * old border, end it and each draw a new one, leaving two on the token. Queued, the second
+ * one sees what the first drew.
+ */
+const queues = new WeakMap();
+function syncBorder(token, state) {
+  const run = (queues.get(token) ?? Promise.resolve()).then(() => drawBorder(token, state));
+  queues.set(token, run.catch(() => {}));
+  return run;
 }
 
 /** Draw, replace or clear the border on every canvas token of this actor. */
@@ -141,56 +149,75 @@ export async function reconcileScene() {
   }
 }
 
-/** Turn changes move the turn marker: resize/relayer borders once core has redrawn it. */
-export const reconcileSoon = () => sequencerReady() && setTimeout(reconcileScene, 150);
+/** Borders on the viewed scene as the settings say they should be: redrawn, or all cleared. */
+const refreshScene = () => (game.settings.get(MODULE_ID, "borders") ? reconcileScene() : clearSceneBorders());
+
+/**
+ * Check the viewed scene's borders shortly, once, however many callers ask in the meantime.
+ * A turn change fires three hooks at once, and saving the settings menu changes several
+ * border settings in a row: each asks, one pass runs. The wait also lets core redraw the
+ * turn marker before a border is sized around it.
+ */
+let timer = null;
+export function reconcileSoon(delay = 150) {
+  if (!sequencerReady()) return;
+  clearTimeout(timer);
+  timer = setTimeout(refreshScene, delay);
+}
 
 // Any border setting change replays borders on the viewed scene.
-const refresh = () => sequencerReady() && (game.settings.get(MODULE_ID, "borders") ? reconcileScene() : clearSceneBorders());
-const PATH_HINT = "Sequencer database path. Browse with Sequencer's Database Viewer (right-click an entry → copy path). Blank = no border for this state.";
-const SCALE_HINT = "Size relative to the token (Sequencer scaleToObject). Default tucks the JB2A dark ring just behind a standard token frame.";
+const refresh = () => reconcileSoon();
+const PATH_HINT = "Sequencer database path. Blank: no border for this state.";
+const SCALE_HINT = "Size relative to the token (Sequencer scaleToObject). The default tucks the JB2A dark ring just behind a standard token frame.";
 
 export const borders = {
   id: "borders",
+  label: "Token borders",
+  hint: "Needs Sequencer and JB2A. A JB2A border on the token marks its attunement.",
+  groups: {
+    graviton: { label: "Graviton", keys: ["border.graviton", "border.graviton.scale"] },
+    photon: { label: "Photon", keys: ["border.photon", "border.photon.scale"] },
+  },
   settings: {
     borders: {
       name: "JB2A token borders",
-      hint: "Requires Sequencer + JB2A. Adds a persistent token border matching the attunement; Unattuned clears it.",
-      scope: "world", config: true, type: Boolean, default: true, onChange: refresh,
+      hint: "Adds a persistent token border matching the attunement. Unattuned clears it.",
+      scope: "world", type: Boolean, default: true, onChange: refresh,
     },
     borderBelow: {
       name: "Draw borders behind the token",
       hint: "On: only the part outside the token art shows. Off: the animation draws over the portrait.",
-      scope: "world", config: true, type: Boolean, default: true, onChange: refresh,
+      scope: "world", type: Boolean, default: true, onChange: refresh,
     },
     "border.graviton": {
-      name: "Graviton border", hint: PATH_HINT,
-      scope: "world", config: true, type: String, default: "jb2a.token_border.circle.static.purple.006", onChange: refresh,
+      name: "Graviton border", label: "Border", hint: PATH_HINT, picker: "border", previewWith: { scale: "border.graviton.scale", below: "borderBelow" },
+      scope: "world", type: String, default: "jb2a.token_border.circle.static.purple.006", onChange: refresh,
     },
     "border.graviton.scale": {
-      name: "Graviton border scale", hint: SCALE_HINT,
-      scope: "world", config: true, type: Number, default: 2.05,
+      name: "Graviton border scale", label: "Scale", hint: SCALE_HINT,
+      scope: "world", type: Number, default: 2.05,
       range: { min: 0.5, max: 4, step: 0.05 }, onChange: refresh,
     },
     "border.photon": {
-      name: "Photon border", hint: PATH_HINT,
-      scope: "world", config: true, type: String, default: "jb2a.token_border.circle.static.orange.008", onChange: refresh,
+      name: "Photon border", label: "Border", hint: PATH_HINT, picker: "border", previewWith: { scale: "border.photon.scale", below: "borderBelow" },
+      scope: "world", type: String, default: "jb2a.token_border.circle.static.orange.008", onChange: refresh,
     },
     "border.photon.scale": {
-      name: "Photon border scale", hint: SCALE_HINT,
-      scope: "world", config: true, type: Number, default: 2.05,
+      name: "Photon border scale", label: "Scale", hint: SCALE_HINT,
+      scope: "world", type: Number, default: 2.05,
       range: { min: 0.5, max: 4, step: 0.05 }, onChange: refresh,
     },
     borderTurnMarker: {
       name: "Border during the token's turn",
       hint: "Foundry draws the combat turn marker above all token art, so it hides a behind-the-token border. Expand: grow the border to wrap outside the marker. Above: draw the border over the marker (and the portrait). Off: leave it as is.",
-      scope: "world", config: true, type: String, default: "expand",
+      scope: "world", type: String, default: "expand",
       choices: { expand: "Expand around the turn marker", above: "Draw above the turn marker", none: "Off" },
       onChange: refresh,
     },
     clearOtherBorders: {
       name: "Clear other JB2A token borders",
-      hint: "When switching, also remove token borders not placed by this module (e.g. from Automated Animations).",
-      scope: "world", config: true, type: Boolean, default: true, onChange: refresh,
+      hint: "When switching, also remove token borders this module did not place (from Automated Animations, for example).",
+      scope: "world", type: Boolean, default: true, onChange: refresh,
     },
   },
   init() {
@@ -201,10 +228,16 @@ export const borders = {
       markSequencerReady();
       reconcileScene();
     }, 500)); // let JB2A register its database first
-    hooks.on("canvasReady", () => sequencerReady() && reconcileScene());
+    // A scene draw: Sequencer first drops every effect it holds and then replays the persisted
+    // ones from the token flags, a moment after canvasReady. A border drawn before that is
+    // dropped with the rest and comes back only if its flag was written in time. So wait for
+    // Sequencer to say it is done; the longer wait on canvasReady covers a Sequencer version
+    // without that hook.
+    hooks.on("canvasReady", () => reconcileSoon(1000));
+    hooks.on("sequencerEffectManagerReady", () => reconcileSoon());
 
-    hooks.on("combatStart", reconcileSoon);
-    hooks.on("combatTurnChange", reconcileSoon);
+    hooks.on("combatStart", () => reconcileSoon());
+    hooks.on("combatTurnChange", () => reconcileSoon());
     hooks.on("updateCombat", (_combat, changes) => {
       if ("turn" in changes || "round" in changes || "started" in changes) reconcileSoon();
     });

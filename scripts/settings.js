@@ -1,32 +1,7 @@
 import { MODULE_ID } from "./constants.js";
 import { activeFeatures } from "./features/index.js";
 import { featureSettings } from "./feature-settings.js";
-
-/**
- * Row order of the settings window, as it was in 1.0.3. Foundry lists settings in the order
- * they are registered, and one combat-end setting sits between two border settings, so plain
- * feature order would move it. A key not listed here is registered after these, in feature
- * order. Delete this list once the settings menu replaces the flat window.
- */
-const ORDER = [
-  "allScenes",
-  "tokenHud",
-  "notify",
-  "borders",
-  "borderBelow",
-  "border.graviton",
-  "border.graviton.scale",
-  "border.photon",
-  "border.photon.scale",
-  "borderTurnMarker",
-  "unattuneOnCombatEnd",
-  "clearOtherBorders",
-  "attacks",
-  "attack.solar-weapon.graviton",
-  "attack.solar-weapon.photon",
-  "attack.solar-flare.graviton",
-  "attack.solar-flare.photon",
-];
+import { StellarAttunementSettings } from "./apps/settings-menu.js";
 
 export function registerSettings() {
   game.settings.register(MODULE_ID, "syncedVersion", {
@@ -36,16 +11,21 @@ export function registerSettings() {
     default: "",
   });
 
-  // Each feature declares its own settings as `settings: { key: data }`.
-  const declared = [];
+  // Each feature declares its own settings as `settings: { key: data }`, and is one fieldset
+  // in the menu. Registry order is the order of the fieldsets.
   for (const feature of activeFeatures()) {
-    const settings = featureSettings(feature.id, feature.i18nKey);
-    for (const [key, data] of Object.entries(feature.settings ?? {})) declared.push({ key, data, settings });
+    const settings = featureSettings(feature.id);
+    for (const [key, data] of Object.entries(feature.settings ?? {})) settings.register(key, data);
   }
-  const rank = (key) => {
-    const index = ORDER.indexOf(key);
-    return index < 0 ? ORDER.length : index;
-  };
-  declared.sort((a, b) => rank(a.key) - rank(b.key)); // stable: unlisted keys keep feature order
-  for (const { key, data, settings } of declared) settings.register(key, data);
+
+  // Open to players as well: two of the settings are per client, and the menu shows a player
+  // only those.
+  game.settings.registerMenu(MODULE_ID, "menu", {
+    name: "Outrider's Stellar Attunement",
+    label: "Configure Settings",
+    hint: "Token art, token borders, the token ring, attack animations and what happens when an encounter ends.",
+    icon: "fa-solid fa-sun",
+    type: StellarAttunementSettings,
+    restricted: false,
+  });
 }

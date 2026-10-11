@@ -3,10 +3,12 @@ import { featureHooks } from "../feature-hooks.js";
 import { getRule, getState } from "../state.js";
 import { playAttack } from "./attacks.js";
 import { applyBorders, reconcileScene } from "./borders.js";
+import { ringChanges } from "./ring.js";
 import { syncWorldContent } from "./world-content.js";
 
 /**
  * Attunement state, the cycle, token art, the Token HUD button and the public API.
+ * Ring colors (features/ring.js) ride along with the art: one token update carries both.
  *
  * Cycle:  unattuned -> graviton
  *         graviton/photon (1st click) -> the opposite attunement
@@ -26,27 +28,63 @@ function nextState(actor, current) {
 
 // Token art
 
-/** Strip a trailing -1/-2 from the default art to find the base path. */
+const ART_FILE = /^(.*?)(?:-[12])?(\.[a-z0-9]+)$/i;
+
+/** An art path without a trailing -1 or -2 before the extension. */
+function unsuffixed(src) {
+  const m = src?.match(ART_FILE);
+  return m ? `${m[1]}${m[2]}` : null;
+}
+
+/**
+ * The actor's own art as it was before this module's first swap, or null when that can no
+ * longer be told.
+ *
+ * Each state's art is written to the prototype token, so the prototype stops being a record
+ * of the original the moment an override lands on it. `flags.<id>.art` keeps the record:
+ * `base` is the original, `last` is what the module wrote most recently. A prototype image
+ * that is not `last` was put there by someone else and is the new original.
+ *
+ * Null is the legacy of 1.0.x, which kept no record: the prototype holds an attuned override
+ * and nothing says what was there before. That is recorded too, as `base: null`, so a later
+ * change to the overrides cannot pass the override off as the original. Setting the prototype
+ * token image by hand (or an Unattuned override) ends it.
+ */
+function knownBase(actor) {
+  const src = actor.prototypeToken?.texture?.src;
+  const art = actor.getFlag(MODULE_ID, "art");
+  if (art && art.last === src) return art.base ?? null;
+  const images = actor.getFlag(MODULE_ID, "images") ?? {};
+  if (!art && src && [images.graviton, images.photon].includes(src)) return null;
+  return unsuffixed(src);
+}
+
+/** The base path the -1/-2 convention builds on. */
 function baseArt(actor) {
-  const src = actor.prototypeToken?.texture?.src ?? actor.img;
-  const m = src.match(/^(.*?)(?:-[12])?(\.[a-z0-9]+)$/i);
-  return m ? { stem: m[1], ext: m[2] } : null;
+  return knownBase(actor) ?? unsuffixed(actor.prototypeToken?.texture?.src ?? actor.img);
 }
 
 function artFor(actor, state) {
   const custom = actor.getFlag(MODULE_ID, "images")?.[state];
   if (custom) return custom;
   const base = baseArt(actor);
-  return base ? `${base.stem}${SUFFIX[state]}${base.ext}` : null;
+  return base ? base.replace(ART_FILE, `$1${SUFFIX[state]}$2`) : null;
 }
 
-async function applyArt(actor, state) {
+/** Token art and, with the option on, token ring colors for this state. One update per token. */
+async function applyLook(actor, state) {
+  const base = knownBase(actor);
   const src = artFor(actor, state);
-  if (!src) return;
+  const changesFor = (token) => {
+    const changes = ringChanges(token, actor, state);
+    if (src && token._source.texture.src !== src) changes["texture.src"] = src;
+    return changes;
+  };
 
   // Unlinked (synthetic) token actor: only its own token changes.
   if (actor.isToken) {
-    if (actor.token._source.texture.src !== src) await actor.token.update({ "texture.src": src });
+    const changes = changesFor(actor.token);
+    if (!foundry.utils.isEmpty(changes)) await actor.token.update(changes);
     return;
   }
 
@@ -54,8 +92,9 @@ async function applyArt(actor, state) {
   const scenes = allScenes ? game.scenes : [canvas.scene].filter(Boolean);
   for (const scene of scenes) {
     const updates = scene.tokens
-      .filter((t) => t.actorLink && t.actorId === actor.id && t._source.texture.src !== src && t.canUserModify(game.user, "update"))
-      .map((t) => ({ _id: t.id, "texture.src": src }));
+      .filter((t) => t.actorLink && t.actorId === actor.id && t.canUserModify(game.user, "update"))
+      .map((t) => ({ _id: t.id, ...changesFor(t) }))
+      .filter((update) => Object.keys(update).length > 1);
     if (!updates.length) continue;
     try {
       await scene.updateEmbeddedDocuments("Token", updates);
@@ -64,9 +103,10 @@ async function applyArt(actor, state) {
     }
   }
 
-  // Prototype last: the system may propagate it to canvas tokens on its own.
-  if (actor.prototypeToken.texture.src !== src && actor.isOwner) {
-    await actor.update({ "prototypeToken.texture.src": src });
+  // Prototype last: the system may propagate it to canvas tokens on its own. The record of
+  // the original art goes in with the same write.
+  if (src && actor.prototypeToken.texture.src !== src && actor.isOwner) {
+    await actor.update({ "prototypeToken.texture.src": src, [`flags.${MODULE_ID}.art`]: { base, last: src } });
   }
 }
 
@@ -97,7 +137,7 @@ export async function setAttunement(actorLike, state, { fromCycle = false } = {}
   if (swapped) await actor.setFlag(MODULE_ID, "swappedTo", state);
   else if (actor.getFlag(MODULE_ID, "swappedTo")) await actor.unsetFlag(MODULE_ID, "swappedTo");
 
-  await applyArt(actor, state);
+  await applyLook(actor, state);
   await applyBorders(actor, state);
   if (game.settings.get(MODULE_ID, "notify")) ui.notifications.info(`${actor.name}: ${LABELS[state]}`);
   return state;
@@ -117,11 +157,13 @@ export async function configure(actorLike) {
   const actor = resolveActor(actorLike);
   if (!actor) return ui.notifications.warn("Select a token or assign a character first.");
   const imgs = actor.getFlag(MODULE_ID, "images") ?? {};
+  // Paths come from actor flags and file names: escaped before they go into markup.
+  const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
   const rows = STATES.map((s) => `
     <div class="form-group">
       <label>${LABELS[s]}</label>
       <div class="form-fields">
-        <input type="text" name="${s}" value="${imgs[s] ?? ""}" placeholder="${artFor(actor, s) ?? ""}">
+        <input type="text" name="${s}" value="${esc(imgs[s])}" placeholder="${esc(artFor(actor, s))}">
         <button type="button" class="osa-browse" data-target="${s}"><i class="fa-solid fa-file-import"></i></button>
       </div>
     </div>`).join("");
@@ -144,11 +186,13 @@ export async function configure(actorLike) {
     rejectClose: false,
   });
   if (!result) return;
+  // setFlag merges into the stored object, so a blanked field would keep its old value.
+  // Clear the whole flag first, then write what is left.
   const cleaned = Object.fromEntries(Object.entries(result).filter(([, v]) => v));
+  if (actor.getFlag(MODULE_ID, "images")) await actor.unsetFlag(MODULE_ID, "images");
   if (Object.keys(cleaned).length) await actor.setFlag(MODULE_ID, "images", cleaned);
-  else await actor.unsetFlag(MODULE_ID, "images");
   const state = getState(actor);
-  if (state) await applyArt(actor, state);
+  if (state) await applyLook(actor, state);
 }
 
 /** `game.modules.get(id).api`: the entry points macros and other modules call. */
@@ -158,27 +202,29 @@ function installApi() {
 
 export const attunement = {
   id: "attunement",
+  label: "Attunement",
+  hint: "Cycling the attunement, the token art that follows it, and the Token HUD button.",
   settings: {
     allScenes: {
       name: "Update tokens in all scenes",
-      hint: "Swap art on linked tokens in every scene, not just the active one.",
-      scope: "world", config: true, type: Boolean, default: true,
+      hint: "Swap art (and ring colors, when that option is on) on linked tokens in every scene, not just the one in view.",
+      scope: "world", type: Boolean, default: true,
     },
     tokenHud: {
       name: "Token HUD button",
       hint: "Show a Stellar Attunement cycle button on the Token HUD for Solarians.",
-      scope: "client", config: true, type: Boolean, default: true,
+      scope: "client", type: Boolean, default: true,
     },
     notify: {
       name: "Show notification",
       hint: "Pop a notification when attunement changes via the macro or HUD.",
-      scope: "client", config: true, type: Boolean, default: false,
+      scope: "client", type: Boolean, default: false,
     },
   },
   init() {
     hooks.clear();
 
-    // Attunement changed some other way (sheet, pf2e-hud, etc.): sync art, reset swap tracking.
+    // Attunement changed some other way (sheet, pf2e-hud, etc.): sync art and ring, reset swap tracking.
     hooks.on("updateItem", async (item, changes, _opts, userId) => {
       if (userId !== game.user.id || !changes.system?.rules) return;
       const actor = item.actor;
@@ -187,7 +233,7 @@ export const attunement = {
       const state = getState(actor);
       if (!state) return;
       if (actor.getFlag(MODULE_ID, "swappedTo")) await actor.unsetFlag(MODULE_ID, "swappedTo");
-      await applyArt(actor, state);
+      await applyLook(actor, state);
       await applyBorders(actor, state);
     });
 

@@ -1,3 +1,120 @@
+/* Outrider's Stellar Attunement */
+
+/* Token HUD button (scripts/features/attunement.js) */
 #token-hud .osa-hud.osa-graviton i { color: #8a5cff; text-shadow: 0 0 6px #7000d6; }
 #token-hud .osa-hud.osa-photon i { color: #ffcf4a; text-shadow: 0 0 6px #ff9d00; }
 #token-hud .osa-hud.osa-unattuned i { opacity: 0.6; }
+
+/* Settings menu (scripts/apps/settings-menu.js) */
+.osa-settings {
+  max-height: 90vh;
+}
+
+.osa-settings .osa-categories {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.osa-settings fieldset {
+  border-color: #7000d6;
+}
+
+.osa-settings fieldset > legend {
+  font-weight: bold;
+}
+
+.osa-settings fieldset > p.hint {
+  margin: 0 0 0.5rem;
+}
+
+/* A group inside a feature: the same frame, fainter, so the feature still reads as the outer box. */
+.osa-settings fieldset.osa-group {
+  border-color: color-mix(in srgb, #7000d6 45%, transparent);
+  margin-top: 0.5rem;
+}
+
+/* Checkbox rows: give the label the width, keep the box on the right. */
+.osa-settings .form-group > label {
+  flex: 5;
+}
+
+.osa-settings .form-group > .form-fields {
+  flex: 1;
+  justify-content: flex-end;
+}
+
+/* A drop-down needs room for its longest option; sliders, colors and paths need room to work. */
+.osa-settings .form-group > .form-fields:has(select),
+.osa-settings .form-group > .form-fields:has(range-picker),
+.osa-settings .form-group > .form-fields:has(color-picker) {
+  flex: 3;
+}
+
+.osa-settings .form-group:has(input[type="text"]) > label {
+  flex: 2;
+}
+
+.osa-settings .form-group > .form-fields:has(input[type="text"]) {
+  flex: 5;
+}
+
+.osa-settings .form-fields > button.icon {
+  flex: 0 0 var(--input-height, 2rem);
+}
+
+/* The mark on a setting that is saved per client. */
+.osa-settings .osa-client {
+  color: color-mix(in srgb, #7000d6 65%, currentColor);
+  font-size: 0.85em;
+}
+
+/* Animation picker (scripts/apps/animation-picker.js) */
+.osa-picker .osa-picker-path {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  font-family: var(--font-mono, monospace);
+  gap: 0.25rem;
+}
+
+.osa-picker .osa-picker-path select {
+  flex: 1 1 6rem;
+  width: auto;
+}
+
+.osa-picker .osa-picker-stage {
+  align-items: center;
+  background: #2b2b33;
+  border: 2px solid #7000d6;
+  border-radius: 8px;
+  color: #cfcfd6;
+  display: flex;
+  height: 220px;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.osa-picker .osa-picker-stage video,
+.osa-picker .osa-picker-stage img {
+  border: 0;
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
+.osa-picker .osa-picker-chosen {
+  margin: 0;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.osa-picker .osa-picker-all {
+  align-items: center;
+  display: flex;
+  gap: 0.35rem;
+}

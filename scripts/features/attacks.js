@@ -2,6 +2,7 @@ import { LABELS, MODULE_ID, OPTION, STATES } from "../constants.js";
 import { featureHooks } from "../feature-hooks.js";
 import { sequencerReady } from "../sequencer.js";
 import { getState } from "../state.js";
+import { systemFlags } from "../system.js";
 
 /**
  * Attack animations. Solarian strikes are synthetic weapons (from Strike rule elements), so
@@ -24,10 +25,13 @@ const ATTACKS = {
 const hooks = featureHooks("attacks");
 
 function attackFromMessage(message) {
-  const ctx = message.flags?.sf2e?.context ?? message.flags?.pf2e?.context;
+  const ctx = systemFlags(message)?.context;
   if (ctx?.type !== "attack-roll") return null;
   const opts = new Set(ctx.options ?? []);
-  const slug = Object.keys(ATTACKS).find((k) => opts.has(`item:slug:${k}`));
+  // By slug first. A strike that is one of these under another slug carries its tag
+  // (Twin Weapons: slug "twin-solar-weapon", tag "solar-weapon").
+  const slug = Object.keys(ATTACKS).find((k) => opts.has(`item:slug:${k}`))
+    ?? Object.keys(ATTACKS).find((k) => opts.has(`item:tag:${k}`));
   if (!slug) return null;
   // Attunement as of the roll; fall back to the live state.
   const state = STATES.find((s) => opts.has(`${OPTION}:${s}`)) ?? getState(message.actor);
@@ -68,26 +72,34 @@ export async function playAttack(message) {
     .play();
 }
 
-/** One Sequencer path per attack and attunement, after the on/off switch. */
+/** One Sequencer path per attack and attunement, after the on/off switch. One menu box per attack. */
+const groups = {};
 const settings = {
   attacks: {
     name: "JB2A attack animations",
     hint: "Play a ranged animation from the Solarian to the target when Solar Weapon or Solar Flare is rolled while attuned. Misses animate as misses.",
-    scope: "world", config: true, type: Boolean, default: true,
+    scope: "world", type: Boolean, default: true,
   },
 };
 for (const [slug, cfg] of Object.entries(ATTACKS)) {
+  groups[slug] = { label: cfg.label, keys: [] };
   for (const state of ["graviton", "photon"]) {
+    groups[slug].keys.push(`attack.${slug}.${state}`);
     settings[`attack.${slug}.${state}`] = {
       name: `${cfg.label} - ${LABELS[state]}`,
-      hint: "Sequencer database path for a ranged effect. Blank = no animation.",
-      scope: "world", config: true, type: String, default: cfg[state],
+      label: LABELS[state],
+      hint: "Sequencer database path for a ranged effect. Blank: no animation.",
+      picker: "ranged",
+      scope: "world", type: String, default: cfg[state],
     };
   }
 }
 
 export const attacks = {
   id: "attacks",
+  label: "Attack animations",
+  hint: "Needs Sequencer and JB2A. Solar Weapon and Solar Flare attack rolls play a ranged animation from the Solarian to the target.",
+  groups,
   settings,
   init() {
     hooks.clear();

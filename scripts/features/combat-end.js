@@ -10,11 +10,13 @@ const hooks = featureHooks("combatEnd");
 
 export const combatEnd = {
   id: "combatEnd",
+  label: "Encounter end",
+  hint: "What happens to attuned Solarians when the GM ends an encounter.",
   settings: {
     unattuneOnCombatEnd: {
       name: "Unattune when the encounter ends",
       hint: "When the GM ends an encounter, every attuned Solarian in it drops to Unattuned.",
-      scope: "world", config: true, type: Boolean, default: true,
+      scope: "world", type: Boolean, default: true,
     },
   },
   init() {
