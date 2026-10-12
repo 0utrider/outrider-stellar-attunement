@@ -233,7 +233,9 @@ export class AnimationPicker extends ApplicationV2 {
         select.append(option);
       });
       select.addEventListener("change", () => {
-        this.segments = [...this.segments.slice(0, level.depth), select.value];
+        // Later segments stay as they were where the new path still has them (a color, a variant
+        // number); #levels falls back to the first option only where one no longer exists.
+        this.segments = this.segments.map((value, depth) => (depth === level.depth ? select.value : value));
         this.render();
       });
       row.append(select);

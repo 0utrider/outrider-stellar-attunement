@@ -1,11 +1,11 @@
-import { MODULE_ID } from "../constants.js";
+import { LABELS, MODULE_ID } from "../constants.js";
 import { effectValue, playerFor } from "../effect-choices.js";
 import { featureHooks } from "../feature-hooks.js";
 import { animationModulesActive } from "../sequencer.js";
 import { getState } from "../state.js";
 
 /**
- * Dynamic Token Ring colors (core Foundry, v13 and v14). With the option on, a token whose
+ * Dynamic Token Ring colors (core Foundry). With the option on, a token whose
  * ring is enabled takes the attunement's ring and background colors, and goes back to its own
  * on Unattuned.
  *
@@ -62,6 +62,62 @@ export function ringChanges(token, actor, state, { reset = false } = {}) {
     if (css(ring.colors?.[field]) !== want[field]) changes[`ring.colors.${field}`] = want[field];
   }
   return changes;
+}
+
+/** Tokens already offered a ring in this session (by uuid): one offer each until the page reloads. */
+const offered = new Set();
+
+/**
+ * Only a ring that is already on is colored, so with the option on and the ring off nothing
+ * shows. When the attunement changes to Graviton or Photon on this client, offer to turn the
+ * ring on: once per token per session, never for an actor whose owner said not to ask again
+ * (`flags.<id>.ringOffer` false on the actor). Not awaited by the caller; the state change is done.
+ */
+export function offerRing(actor, state) {
+  return askRing(actor, state).catch((err) => console.warn(`${MODULE_ID} | Ring offer`, err));
+}
+
+async function askRing(actor, state) {
+  if (!actor || !enabled() || !["graviton", "photon"].includes(state) || !canvas.scene) return;
+  const base = actor.isToken ? actor.token.baseActor : actor;
+  if (base?.getFlag(MODULE_ID, "ringOffer") === false) return;
+  const tokens = (actor.isToken ? [actor.token] : canvas.scene.tokens.filter((t) => t.actorLink && t.actorId === actor.id))
+    .filter((t) => t.parent === canvas.scene && !t._source.ring?.enabled && !offered.has(t.uuid));
+  if (!tokens.length) return;
+  for (const token of tokens) offered.add(token.uuid);
+
+  const editable = tokens.filter((t) => t.canUserModify(game.user, "update"));
+  if (!editable.length) {
+    ui.notifications.info(`${actor.name}: the token ring is off, so the ${LABELS[state]} ring colors do not show. The GM can turn it on in the token's Appearance tab.`);
+    return;
+  }
+  const esc = foundry.utils.escapeHTML;
+  const prototype = !actor.isToken && base.canUserModify(game.user, "update") && !base.prototypeToken.ring?.enabled;
+  const these = editable.length === 1 ? "this token" : `these ${editable.length} tokens`;
+  const choice = await foundry.applications.api.DialogV2.wait({
+    window: { title: `Token ring: ${actor.name}`, icon: "fa-solid fa-ring" },
+    classes: ["osa-ring-offer"],
+    position: { width: 520 },
+    content: `<p>${esc(actor.name)} is now ${LABELS[state]}, but the token ring is off, so the ring colors do not show.</p>`
+      + "<p>Turning the ring on draws Foundry's dynamic token ring and frames the token art inside it: art made for a square token can be cropped. It can be turned off again in the token's Appearance tab.</p>",
+    buttons: [
+      { action: "token", label: `Turn on for ${these}`, icon: "fa-solid fa-circle-check", default: true },
+      ...(prototype ? [{ action: "prototype", label: `${editable.length === 1 ? "This token" : "These tokens"} and new ones`, icon: "fa-solid fa-user-gear" }] : []),
+      { action: "later", label: "Not now", icon: "fa-solid fa-clock" },
+      { action: "never", label: `Do not ask for ${actor.name}`, icon: "fa-solid fa-ban" },
+    ],
+    rejectClose: false,
+  });
+
+  if (choice === "never") return base.setFlag(MODULE_ID, "ringOffer", false);
+  if (choice !== "token" && choice !== "prototype") return;
+  // The colors go in with the switch, worked out for the state the actor is in now.
+  const now = getState(actor) ?? state;
+  for (const token of editable) {
+    const on = { _source: { ring: { ...token._source.ring, enabled: true } } };
+    await token.update({ "ring.enabled": true, ...ringChanges(on, actor, now) });
+  }
+  if (choice === "prototype") await base.update({ "prototypeToken.ring.enabled": true });
 }
 
 /**

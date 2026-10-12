@@ -3,7 +3,7 @@ import { featureHooks } from "../feature-hooks.js";
 import { getRule, getState } from "../state.js";
 import { playAttack } from "./attacks.js";
 import { applyBorders, reconcileScene } from "./borders.js";
-import { ringChanges } from "./ring.js";
+import { offerRing, ringChanges } from "./ring.js";
 import { syncWorldContent } from "./world-content.js";
 
 /**
@@ -139,6 +139,7 @@ export async function setAttunement(actorLike, state, { fromCycle = false } = {}
 
   await applyLook(actor, state);
   await applyBorders(actor, state);
+  offerRing(actor, state);
   if (game.settings.get(MODULE_ID, "notify")) ui.notifications.info(`${actor.name}: ${LABELS[state]}`);
   return state;
 }
@@ -235,6 +236,7 @@ export const attunement = {
       if (actor.getFlag(MODULE_ID, "swappedTo")) await actor.unsetFlag(MODULE_ID, "swappedTo");
       await applyLook(actor, state);
       await applyBorders(actor, state);
+      offerRing(actor, state);
     });
 
     hooks.on("renderTokenHUD", (hud, html) => {

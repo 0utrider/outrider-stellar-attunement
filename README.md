@@ -21,6 +21,19 @@ SF2e Solarian helper. Cycles Stellar Attunement and keeps token art in sync.
 
 Changing attunement from the character sheet (Actions › Encounter) or PF2e HUD also swaps the art, and resets the swap tracking.
 
+## Actions that change attunement
+
+With **Follow cycle and disharmony actions** on (the default), the module reads a Solarian's action cards in chat (the action icon or the **Use** button on the sheet) and changes the attunement the way the rules say:
+
+- **cycle** (Stellar Rush, Eclipse Strike, Wormhole, ...): Graviton and Photon swap. Used while Unattuned, nothing changes.
+- **disharmony** (Shattering Impact, Big Bang, ...): Unattuned.
+- **Attune**: a small window asks Graviton or Photon. Closing it changes nothing.
+- An **attuned** action used while Unattuned gives a warning and changes nothing.
+
+The rules change the state once the action is complete. Eclipse Strike, Hampering Flare, Clinging Flare, Shattering Impact, Flicker Strike, Solar Barrage and Unstable Flare include Strikes, so post the action's card first and then roll its Strikes: the state changes after them (Solar Barrage after three, Flicker Strike after two or after a first Strike that misses), when the turn moves on, or after two minutes. The Strikes roll, and animate, in the attunement the action started in. Changing the attunement by hand in the meantime cancels the change.
+
+Rolls made from the card (damage, saves) do not count. Posting the same card again to show it to the table counts as using it again. The change is made by the client of the user who posted the card, so it happens once however many users are connected.
+
 ## Art convention
 
 Default art (unattuned) = the prototype token image. Graviton = `<base>-1.<ext>`, Photon = `<base>-2.<ext>`.
@@ -86,7 +99,7 @@ On by default in a world without Sequencer and JB2A, off by default in a world t
 
 The background colors are blank by default, which keeps the token's own background. The colors travel in the same token update as the art swap, and follow **Update tokens in all scenes**. A token placed while its actor is attuned starts with the state's colors.
 
-Only a ring that is already on is colored: the module does not turn rings on, because that changes how the token art is framed. The prototype token's ring colors are never written, so turning the option off puts every token back to them. Ring, art swap and JB2A border work together on one token.
+Only a ring that is already on is colored: the module does not turn rings on by itself, because that changes how the token art is framed. When the attunement changes to Graviton or Photon and a token of that Solarian on the scene has its ring off, the user who made the change is asked once per token per session: **Turn on for this token**, **This token and new ones** (the prototype token too), **Not now**, or **Do not ask for** that actor (stored on the actor). The prototype token's ring colors are never written, so turning the option off puts every token back to them. Ring, art swap and JB2A border work together on one token.
 
 If the ring has its own subject texture (Appearance tab, Ring Subject), Foundry draws that image and the art swap does not show on that token.
 
@@ -149,6 +162,10 @@ The default border and attack paths depend on which JB2A pack is active: the Pat
 - **Token HUD button** (per browser, default on)
 - **Show notification** (per browser, default off)
 
+**Actions**
+
+- **Follow cycle and disharmony actions** (world, default on)
+
 **Token borders**
 
 - **JB2A token borders** (world, default on when Sequencer and JB2A are active)
@@ -176,13 +193,13 @@ The default border and attack paths depend on which JB2A pack is active: the Pat
 
 - **Unattune when the encounter ends** (world, default on)
 
-Setting keys are the same as in 1.0.x, so a world keeps its values. Two defaults changed in 1.1.0 (the turn marker behavior and the ring option, above): a world that never saved those two settings follows the new defaults.
+Setting keys are the same as in 1.0.x, so a world keeps its values. Two defaults changed in 1.1.0 (the turn marker behavior and the ring option, above): a world that never saved those two settings follows the new defaults. 1.1.1 adds **Follow cycle and disharmony actions**, on by default, so a world that updates starts following action cards.
 
 ### Picking an animation
 
 With Sequencer and JB2A active, each border and attack field has two buttons beside it. Without them the fields are plain text.
 
-- **Browse** opens a picker: one drop-down per part of the database path, a looping clip of the entry, and the path itself. Border fields list token borders, attack fields list ranged entries (the ones Sequencer can stretch to a target), with the energy and beam groups first. **Show the whole database** lifts the filter. **Use this animation** puts the path in the field. Nothing is stored until you save the settings window.
+- **Browse** opens a picker: one drop-down per part of the database path, a looping clip of the entry, and the path itself. Changing one part keeps the parts after it where the new path has them, so a border's color can change without losing its design number. Border fields list token borders, attack fields list ranged entries (the ones Sequencer can stretch to a target), with the energy and beam groups first. **Show the whole database** lifts the filter. **Use this animation** puts the path in the field. Nothing is stored until you save the settings window.
 - **Play** shows the animation on the canvas, for you alone and without storing anything: a border on your selected token (else the first Solarian on the scene) at the scale and layer in the form, an attack from that token to your target, or six squares to the right with no target.
 
 ## Install

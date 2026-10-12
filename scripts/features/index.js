@@ -1,4 +1,5 @@
 import { attunement } from "./attunement.js";
+import { actionWatcher } from "./action-watcher.js";
 import { borders } from "./borders.js";
 import { ring } from "./ring.js";
 import { attacks } from "./attacks.js";
@@ -24,7 +25,7 @@ import { worldContent } from "./world-content.js";
  * - `ready` runs in the ready hook, in this order, each awaited before the next.
  *   `attunement` is first because its `ready` puts the public API in place.
  */
-export const FEATURES = [attunement, borders, ring, attacks, playerEffects, combatEnd, worldContent];
+export const FEATURES = [attunement, actionWatcher, borders, ring, attacks, playerEffects, combatEnd, worldContent];
 
 /** The features that run in this world, in registry order. Read at init or later, not at import. */
 export const activeFeatures = () => FEATURES;

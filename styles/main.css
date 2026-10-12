@@ -182,3 +182,7 @@
   font-style: italic;
   color: color-mix(in srgb, #7000d6 65%, currentColor);
 }
+
+/* Token ring offer (features/ring.js): four buttons, two to a row. */
+.osa-ring-offer .form-footer { flex-wrap: wrap; }
+.osa-ring-offer .form-footer button { flex: 1 1 45%; }
