@@ -173,3 +173,11 @@ With Sequencer and JB2A active, each border and attack field has two buttons bes
 
 - **Browse** opens a picker: one drop-down per part of the database path, a looping clip of the entry, and the path itself. Border fields list token borders, attack fields list ranged entries (the ones Sequencer can stretch to a target), with the energy and beam groups first. **Show the whole database** lifts the filter. **Use this animation** puts the path in the field. Nothing is stored until you save the settings window.
 - **Play** shows the animation on the canvas, for you alone and without storing anything: a border on your selected token (else the first Solarian on the scene) at the scale and layer in the form, an attack from that token to your target, or six squares to the right with no target.
+
+## Install
+
+Paste this manifest URL into **Add-on Modules > Install Module**:
+
+```
+https://github.com/0utrider/outrider-stellar-attunement/releases/latest/download/module.json
+```
