@@ -19,9 +19,19 @@ export function markSequencerReady() {
   ready = true;
 }
 
-/** True when Sequencer and one of the JB2A modules are installed and active. */
+/** True when the Sequencer module is active in this world. */
+export const sequencerActive = () => !!game.modules.get("sequencer")?.active;
+
+/** True when one of the JB2A modules (free or Patreon) is active in this world. */
+export const jb2aActive = () => JB2A_IDS.some((id) => game.modules.get(id)?.active);
+
+/**
+ * True when both are active, going by the module list alone. This can be asked in `init`,
+ * before Sequencer has put its API in place: setting defaults and the settings window use it.
+ */
+export const animationModulesActive = () => sequencerActive() && jb2aActive();
+
+/** True when Sequencer and one of the JB2A modules are active and Sequencer's API is there. */
 export function animationsInstalled() {
-  return !!game.modules.get("sequencer")?.active
-    && JB2A_IDS.some((id) => game.modules.get(id)?.active)
-    && typeof Sequencer !== "undefined";
+  return animationModulesActive() && typeof Sequencer !== "undefined";
 }

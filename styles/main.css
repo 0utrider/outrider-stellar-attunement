@@ -59,12 +59,64 @@
   flex: 2;
 }
 
+/* A drop-down with its reset button beside it: room for the longest option. */
+.osa-settings .form-group:has(select) > label {
+  flex: 3;
+}
+
+.osa-settings .form-group > .form-fields:has(select) {
+  flex: 4;
+}
+
 .osa-settings .form-group > .form-fields:has(input[type="text"]) {
   flex: 5;
 }
 
 .osa-settings .form-fields > button.icon {
   flex: 0 0 var(--input-height, 2rem);
+}
+
+/* Reset to default, last in each field. Dim while the field is at its default already. */
+.osa-settings .form-fields > button.osa-reset {
+  border-color: transparent;
+  background: none;
+}
+
+.osa-settings .form-fields > button.osa-reset:disabled {
+  opacity: 0.25;
+}
+
+/* None, on a player's own field: quiet until used, like reset. */
+.osa-settings .form-fields > button.osa-none {
+  border-color: transparent;
+  background: none;
+}
+
+/* Reset Defaults in the footer: the smaller of the two, Save Changes keeps the width. */
+.osa-settings .form-footer > button[data-action="resetAll"] {
+  flex: 0 0 auto;
+}
+
+/* The GM's row about what players have saved. */
+.osa-settings .osa-players > .form-fields {
+  flex: 2;
+}
+
+/* A player's own scale: a number field that can be left blank. */
+.osa-settings .form-group > .form-fields:has(input[type="number"]) {
+  flex: 3;
+}
+
+/* Settings left out because a module is not active, and where to get it. */
+.osa-settings .osa-note {
+  border: 1px solid color-mix(in srgb, #7000d6 65%, currentColor);
+  border-radius: 6px;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+}
+
+.osa-settings .osa-note a {
+  text-decoration: underline;
 }
 
 /* The mark on a setting that is saved per client. */

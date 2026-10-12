@@ -1,11 +1,15 @@
 import { MODULE_ID } from "../constants.js";
+import { effectValue, playerFor } from "../effect-choices.js";
 import { featureHooks } from "../feature-hooks.js";
-import { animationsInstalled, markSequencerReady, sequencerReady } from "../sequencer.js";
+import { animationModulesActive, animationsInstalled, markSequencerReady, sequencerReady } from "../sequencer.js";
 import { getState } from "../state.js";
 
 /**
  * JB2A token borders (Sequencer). With Sequencer + JB2A active, a persistent JB2A token border
  * marks the attunement. Also keeps the border clear of core's combat turn marker.
+ *
+ * Which animation and what scale come through effectValue (scripts/effect-choices.js): the
+ * world settings, or the choices of the token's player when players may make their own.
  */
 
 const BORDER_NAME = `${MODULE_ID}.border`;
@@ -17,9 +21,10 @@ export function bordersAvailable() {
   return game.settings.get(MODULE_ID, "borders") && animationsInstalled();
 }
 
-function borderPathFor(state) {
+function borderPathFor(state, user) {
   if (state === "unattuned") return null;
-  const path = game.settings.get(MODULE_ID, `border.${state}`)?.trim();
+  // A player's path that is not in the database is passed over for the GM's.
+  const path = String(effectValue(`border.${state}`, user, (value) => Sequencer.Database.entryExists(value)) ?? "").trim();
   if (!path) return null;
   if (!Sequencer.Database.entryExists(path)) {
     console.warn(`${MODULE_ID} | JB2A entry not found: ${path} (free JB2A lacks some variants)`);
@@ -53,8 +58,8 @@ function hasTurnMarker(token) {
   return game.settings.get("core", "combatTrackerConfig")?.turnMarker?.enabled !== false;
 }
 
-function borderLayout(token, state) {
-  const base = game.settings.get(MODULE_ID, `border.${state}.scale`);
+function borderLayout(token, state, user) {
+  const base = effectValue(`border.${state}.scale`, user);
   const below = game.settings.get(MODULE_ID, "borderBelow");
   const mode = hasTurnMarker(token) ? game.settings.get(MODULE_ID, "borderTurnMarker") : "none";
   if (mode === "expand") {
@@ -72,8 +77,9 @@ function borderSignature(path, layout) {
 }
 
 async function drawBorder(token, state) {
-  const path = borderPathFor(state);
-  const layout = path && borderLayout(token, state);
+  const user = playerFor(token.actor);
+  const path = borderPathFor(state, user);
+  const layout = path && borderLayout(token, state, user);
   const sig = path && borderSignature(path, layout);
   const current = bordersOn(token);
   if (path && current.length === 1 && current[0].data.name === BORDER_NAME && current[0].data.origin === sig) return;
@@ -174,6 +180,7 @@ export const borders = {
   id: "borders",
   label: "Token borders",
   hint: "Needs Sequencer and JB2A. A JB2A border on the token marks its attunement.",
+  requires: "animations",
   groups: {
     graviton: { label: "Graviton", keys: ["border.graviton", "border.graviton.scale"] },
     photon: { label: "Photon", keys: ["border.photon", "border.photon.scale"] },
@@ -181,8 +188,8 @@ export const borders = {
   settings: {
     borders: {
       name: "JB2A token borders",
-      hint: "Adds a persistent token border matching the attunement. Unattuned clears it.",
-      scope: "world", type: Boolean, default: true, onChange: refresh,
+      hint: "Adds a persistent token border matching the attunement. Unattuned clears it. On by default when Sequencer and JB2A are active.",
+      scope: "world", type: Boolean, default: animationModulesActive, onChange: refresh,
     },
     borderBelow: {
       name: "Draw borders behind the token",
@@ -191,26 +198,26 @@ export const borders = {
     },
     "border.graviton": {
       name: "Graviton border", label: "Border", hint: PATH_HINT, picker: "border", previewWith: { scale: "border.graviton.scale", below: "borderBelow" },
-      scope: "world", type: String, default: "jb2a.token_border.circle.static.purple.006", onChange: refresh,
+      player: true, scope: "world", type: String, default: "jb2a.token_border.circle.static.purple.006", onChange: refresh,
     },
     "border.graviton.scale": {
       name: "Graviton border scale", label: "Scale", hint: SCALE_HINT,
-      scope: "world", type: Number, default: 2.05,
+      player: true, scope: "world", type: Number, default: 2.05,
       range: { min: 0.5, max: 4, step: 0.05 }, onChange: refresh,
     },
     "border.photon": {
       name: "Photon border", label: "Border", hint: PATH_HINT, picker: "border", previewWith: { scale: "border.photon.scale", below: "borderBelow" },
-      scope: "world", type: String, default: "jb2a.token_border.circle.static.orange.008", onChange: refresh,
+      player: true, scope: "world", type: String, default: "jb2a.token_border.circle.static.orange.008", onChange: refresh,
     },
     "border.photon.scale": {
       name: "Photon border scale", label: "Scale", hint: SCALE_HINT,
-      scope: "world", type: Number, default: 2.05,
+      player: true, scope: "world", type: Number, default: 2.05,
       range: { min: 0.5, max: 4, step: 0.05 }, onChange: refresh,
     },
     borderTurnMarker: {
       name: "Border during the token's turn",
-      hint: "Foundry draws the combat turn marker above all token art, so it hides a behind-the-token border. Expand: grow the border to wrap outside the marker. Above: draw the border over the marker (and the portrait). Off: leave it as is.",
-      scope: "world", type: String, default: "expand",
+      hint: "Foundry draws the combat turn marker above all token art, so it hides a behind-the-token border. Above: draw the border over the marker (and the portrait). Expand: grow the border to wrap outside the marker. Off: leave it as is.",
+      scope: "world", type: String, default: "above",
       choices: { expand: "Expand around the turn marker", above: "Draw above the turn marker", none: "Off" },
       onChange: refresh,
     },

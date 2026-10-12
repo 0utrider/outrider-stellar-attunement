@@ -68,13 +68,15 @@ Switching removes this module's border first. It also removes any other JB2A tok
 
 Foundry v13+ draws the combat turn marker on the interface layer, above all token art, so it covers a behind-the-token border. The **Border during the token's turn** setting chooses what to do while it's that token's turn:
 
-- **Expand** (default): grow the border to wrap just outside the turn marker (scale × the marker's size ratio, 1.5 by default), then shrink it back when the turn passes.
-- **Above**: draw the border over the marker. This also draws it over the portrait.
+- **Above** (default): draw the border over the marker. This also draws it over the portrait.
+- **Expand**: grow the border to wrap just outside the turn marker (scale × the marker's size ratio, 1.5 by default), then shrink it back when the turn passes.
 - **Off**: leave it as is.
+
+The default was Expand up to 1.1.0. A world that never changed this setting now gets Above; pick Expand to keep the old behavior.
 
 ## Dynamic Token Ring
 
-Off by default. With **Color the token ring** on, a token that has Foundry's Dynamic Token Ring enabled takes a ring color and a background color for its attunement:
+On by default in a world without Sequencer and JB2A, off by default in a world that has both active, where the token border already marks the attunement. Either way it is a setting, and a value you saved is kept. With **Color the token ring** on, a token that has Foundry's Dynamic Token Ring enabled takes a ring color and a background color for its attunement:
 
 - Graviton → ring `#8a5cff`
 - Photon → ring `#ff9d00`
@@ -85,6 +87,8 @@ The background colors are blank by default, which keeps the token's own backgrou
 Only a ring that is already on is colored: the module does not turn rings on, because that changes how the token art is framed. The prototype token's ring colors are never written, so turning the option off puts every token back to them. Ring, art swap and JB2A border work together on one token.
 
 If the ring has its own subject texture (Appearance tab, Ring Subject), Foundry draws that image and the art swap does not show on that token.
+
+**Flash the ring on a change** (off by default) flashes the ring in its new color when the module changes it, for everyone viewing the scene.
 
 ## Combat end
 
@@ -101,9 +105,32 @@ Solarian strikes are synthetic weapons, so Automated Animations can't attach to 
 
 These match the Automated Animations menu picks (AA "Energy Strand 02" is JB2A's `multiple` strand). The target is the one recorded on the roll, falling back to the roller's current target.
 
+## Player choices
+
+Off by default. With **Allow Players to Customize Effects** on, each player can pick their own effects in the same settings window, in a **Your effects** box below their two per-browser settings, and everyone sees them:
+
+- the border animation and its scale, for Graviton and for Photon
+- the ring color and background color, for Graviton and for Photon
+- the Solar Weapon and Solar Flare attack animations, for Graviton and for Photon
+
+The GM's settings stay the default. A field a player leaves blank uses the GM's setting, which the field shows in grey. The crossed-circle button beside a field sets it to **none** for that player: no border, no attack animation, or the token's own ring color, whatever the GM set. The on and off switches, the border layer, the turn marker behavior and the rest stay with the GM.
+
+Whose choice applies:
+
+- A border or a ring sits on a token, so it follows the token's player: the player who has that actor as their assigned character, else the only player who owns it. An actor only the GM owns, or one several players own with none of them assigned, uses the GM's settings.
+- An attack animation follows whoever rolled the attack, as dice do, whoever owns the token.
+
+The choices are stored on the player's own User document, the way Dice So Nice stores its appearance settings. When a player saves, the active GM's client redraws that player's borders and rings (the player's own client, if no GM is online). Turning the switch off puts the GM's effects back at once; what players saved is kept and ignored until the switch is on again.
+
+The GM's **Player choices** box names the players who have choices saved. **Clear all** removes them for good, after a confirmation. It acts at once and does not wait for **Save Changes**, because it changes the players' User documents and not this window's settings.
+
 ## Settings
 
-The module has one entry in **Configure Settings**: the **Configure Settings** button under its name opens a single window, one box per area. World settings are for the GM. The two marked with a person icon are saved per browser, and they are the only ones a player sees.
+The module has one entry in **Configure Settings**: the **Configure Settings** button under its name opens a single window, one box per area. World settings are for the GM. The two marked with a person icon are saved per browser. A player sees those two, and the **Your effects** box when the GM allows player choices.
+
+Each field has a reset button at its right end, which puts the field back to its default (for a player's own choice: back to blank, the GM's setting). **Reset Defaults**, beside **Save Changes**, does that for every field in the window. A field changed since the window opened is marked. Nothing is stored until you save, so closing the window undoes a reset.
+
+Without Sequencer and JB2A both active, the **Token borders** and **Attack animations** boxes are left out, and a note at the top of the window says so and links to what is missing. [JB2A has a free version](https://foundryvtt.com/packages/JB2A_DnD5e).
 
 **Attunement**
 
@@ -113,27 +140,32 @@ The module has one entry in **Configure Settings**: the **Configure Settings** b
 
 **Token borders**
 
-- **JB2A token borders** (world, default on)
+- **JB2A token borders** (world, default on when Sequencer and JB2A are active)
 - **Draw borders behind the token** (world, default on)
-- **Border during the token's turn** - expand / above / off (world, default expand)
+- **Border during the token's turn** - above / expand / off (world, default above)
 - **Clear other JB2A token borders** (world, default on)
 - **Graviton** and **Photon**: **Border** (Sequencer database path) and **Scale** (`scaleToObject`, default 2.05)
 
 **Dynamic Token Ring**
 
-- **Color the token ring** (world, default off)
+- **Color the token ring** (world, default on, or off when Sequencer and JB2A are active)
+- **Flash the ring on a change** (world, default off)
 - **Graviton** and **Photon**: **Ring color** and **Background color**
 
 **Attack animations**
 
-- **JB2A attack animations** (world, default on)
+- **JB2A attack animations** (world, default on when Sequencer and JB2A are active)
 - **Solar Weapon** and **Solar Flare**: one Sequencer database path each for Graviton and Photon
+
+**Player choices**
+
+- **Allow Players to Customize Effects** (world, default off)
 
 **Encounter end**
 
 - **Unattune when the encounter ends** (world, default on)
 
-Setting keys are the same as in 1.0.x, so a world keeps its values.
+Setting keys are the same as in 1.0.x, so a world keeps its values. Two defaults changed in 1.1.0 (the turn marker behavior and the ring option, above): a world that never saved those two settings follows the new defaults.
 
 ### Picking an animation
 
