@@ -1,7 +1,7 @@
 import { LABELS, MODULE_ID, OPTION, STATES } from "../constants.js";
 import { effectValue } from "../effect-choices.js";
 import { featureHooks } from "../feature-hooks.js";
-import { animationModulesActive, sequencerReady } from "../sequencer.js";
+import { animationModulesActive, byPack, sequencerReady } from "../sequencer.js";
 import { getState } from "../state.js";
 import { systemFlags } from "../system.js";
 
@@ -14,16 +14,22 @@ import { systemFlags } from "../system.js";
  * players may make their own, whoever owns the token.
  */
 
+/**
+ * The default animation for each attack and attunement, and under `free` the nearest entry
+ * the free JB2A pack has for the ones it lacks. Solar Flare's Photon beam is in both packs.
+ */
 const ATTACKS = {
   "solar-weapon": {
     label: "Solar Weapon",
     graviton: "jb2a.energy_strands.range.multiple.dark_purple.01",
     photon: "jb2a.scorching_ray.02.orange",
+    free: { graviton: "jb2a.energy_strands.range.multiple.purple.01", photon: "jb2a.scorching_ray.01.orange" },
   },
   "solar-flare": {
     label: "Solar Flare",
     graviton: "jb2a.fireball.beam.dark_purple",
     photon: "jb2a.fireball.beam.orange",
+    free: { graviton: "jb2a.eldritch_blast.purple", photon: "jb2a.fireball.beam.orange" },
   },
 };
 
@@ -96,7 +102,7 @@ for (const [slug, cfg] of Object.entries(ATTACKS)) {
       label: LABELS[state],
       hint: "Sequencer database path for a ranged effect. Blank: no animation.",
       picker: "ranged",
-      player: true, scope: "world", type: String, default: cfg[state],
+      player: true, scope: "world", type: String, default: byPack(cfg[state], cfg.free[state]),
     };
   }
 }

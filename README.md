@@ -60,6 +60,8 @@ With Sequencer + JB2A active, a persistent border marks the attunement:
 - Photon → `jb2a.token_border.circle.static.orange.008`
 - Unattuned → border removed
 
+Those two are in the Patreon JB2A pack. The free pack has blue borders only, so with the free pack alone the defaults are its dark ring for Graviton (`jb2a.token_border.circle.static.blue.006`) and its bright ring for Photon (`jb2a.token_border.circle.static.blue.007`).
+
 Borders draw behind the token by default and are scaled so the JB2A dark ring just peeks out from behind the token frame. Changing any border setting replays the borders live.
 
 Switching removes this module's border first. It also removes any other JB2A token border, e.g. one from Automated Animations; you can turn that off in settings. Borders are Sequencer persistent effects on each token. When a scene loads or a token is placed, the active GM's client (or the owning player's, if no GM is online) re-checks the borders, once Sequencer has put its own persistent effects back.
@@ -103,7 +105,14 @@ Solarian strikes are synthetic weapons, so Automated Animations can't attach to 
 | Solar Weapon | `jb2a.energy_strands.range.multiple.dark_purple.01` | `jb2a.scorching_ray.02.orange` |
 | Solar Flare | `jb2a.fireball.beam.dark_purple` | `jb2a.fireball.beam.orange` |
 
-These match the Automated Animations menu picks (AA "Energy Strand 02" is JB2A's `multiple` strand). The target is the one recorded on the roll, falling back to the roller's current target.
+With the free JB2A pack alone, three of these are not in its database and the defaults are the nearest entries it has:
+
+| Attack | Graviton | Photon |
+|---|---|---|
+| Solar Weapon | `jb2a.energy_strands.range.multiple.purple.01` | `jb2a.scorching_ray.01.orange` |
+| Solar Flare | `jb2a.eldritch_blast.purple` | `jb2a.fireball.beam.orange` |
+
+The Patreon defaults match the Automated Animations menu picks (AA "Energy Strand 02" is JB2A's `multiple` strand). The target is the one recorded on the roll, falling back to the roller's current target.
 
 ## Player choices
 
@@ -132,6 +141,8 @@ Each field has a reset button at its right end, which puts the field back to its
 
 Without Sequencer and JB2A both active, the **Token borders** and **Attack animations** boxes are left out, and a note at the top of the window says so and links to what is missing. [JB2A has a free version](https://foundryvtt.com/packages/JB2A_DnD5e).
 
+The default border and attack paths depend on which JB2A pack is active: the Patreon pack's entries when it is active, the free pack's when only the free pack is. A default is not a stored value, so a world that moves from one pack to the other gets the other defaults on its next load, and a path you saved yourself stays as you saved it.
+
 **Attunement**
 
 - **Update tokens in all scenes** (world, default on)
@@ -144,7 +155,7 @@ Without Sequencer and JB2A both active, the **Token borders** and **Attack anima
 - **Draw borders behind the token** (world, default on)
 - **Border during the token's turn** - above / expand / off (world, default above)
 - **Clear other JB2A token borders** (world, default on)
-- **Graviton** and **Photon**: **Border** (Sequencer database path) and **Scale** (`scaleToObject`, default 2.05)
+- **Graviton** and **Photon**: **Border** (Sequencer database path, default by JB2A pack) and **Scale** (`scaleToObject`, default 2.05)
 
 **Dynamic Token Ring**
 
@@ -155,7 +166,7 @@ Without Sequencer and JB2A both active, the **Token borders** and **Attack anima
 **Attack animations**
 
 - **JB2A attack animations** (world, default on when Sequencer and JB2A are active)
-- **Solar Weapon** and **Solar Flare**: one Sequencer database path each for Graviton and Photon
+- **Solar Weapon** and **Solar Flare**: one Sequencer database path each for Graviton and Photon (default by JB2A pack)
 
 **Player choices**
 

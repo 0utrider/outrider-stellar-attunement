@@ -1,7 +1,7 @@
 import { MODULE_ID } from "../constants.js";
 import { effectValue, playerFor } from "../effect-choices.js";
 import { featureHooks } from "../feature-hooks.js";
-import { animationModulesActive, animationsInstalled, markSequencerReady, sequencerReady } from "../sequencer.js";
+import { animationModulesActive, animationsInstalled, byPack, markSequencerReady, sequencerReady } from "../sequencer.js";
 import { getState } from "../state.js";
 
 /**
@@ -11,6 +11,16 @@ import { getState } from "../state.js";
  * Which animation and what scale come through effectValue (scripts/effect-choices.js): the
  * world settings, or the choices of the token's player when players may make their own.
  */
+
+/**
+ * The default border for each attunement. The free JB2A pack has token borders in blue only,
+ * so there the two states differ by shape: its dark ring for Graviton (the same shape as the
+ * purple default), its bright ring for Photon.
+ */
+const DEFAULT_BORDERS = {
+  graviton: { full: "jb2a.token_border.circle.static.purple.006", free: "jb2a.token_border.circle.static.blue.006" },
+  photon: { full: "jb2a.token_border.circle.static.orange.008", free: "jb2a.token_border.circle.static.blue.007" },
+};
 
 const BORDER_NAME = `${MODULE_ID}.border`;
 const BORDER_FILE = /token_border|Token_Border/;
@@ -198,7 +208,7 @@ export const borders = {
     },
     "border.graviton": {
       name: "Graviton border", label: "Border", hint: PATH_HINT, picker: "border", previewWith: { scale: "border.graviton.scale", below: "borderBelow" },
-      player: true, scope: "world", type: String, default: "jb2a.token_border.circle.static.purple.006", onChange: refresh,
+      player: true, scope: "world", type: String, default: byPack(DEFAULT_BORDERS.graviton.full, DEFAULT_BORDERS.graviton.free), onChange: refresh,
     },
     "border.graviton.scale": {
       name: "Graviton border scale", label: "Scale", hint: SCALE_HINT,
@@ -207,7 +217,7 @@ export const borders = {
     },
     "border.photon": {
       name: "Photon border", label: "Border", hint: PATH_HINT, picker: "border", previewWith: { scale: "border.photon.scale", below: "borderBelow" },
-      player: true, scope: "world", type: String, default: "jb2a.token_border.circle.static.orange.008", onChange: refresh,
+      player: true, scope: "world", type: String, default: byPack(DEFAULT_BORDERS.photon.full, DEFAULT_BORDERS.photon.free), onChange: refresh,
     },
     "border.photon.scale": {
       name: "Photon border scale", label: "Scale", hint: SCALE_HINT,

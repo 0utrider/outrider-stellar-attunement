@@ -26,6 +26,19 @@ export const sequencerActive = () => !!game.modules.get("sequencer")?.active;
 export const jb2aActive = () => JB2A_IDS.some((id) => game.modules.get(id)?.active);
 
 /**
+ * True when the free JB2A pack is the only JB2A active. Its database is a part of the Patreon
+ * pack's, so a default that names an entry only the Patreon pack has needs another one here.
+ */
+export const jb2aFreeOnly = () => !!game.modules.get("JB2A_DnD5e")?.active && !game.modules.get("jb2a_patreon")?.active;
+
+/**
+ * A setting default that depends on the JB2A pack: `free` with the free pack alone, `full`
+ * otherwise. It returns a function, which a declaration's `default` may be: the registration
+ * calls it once, in `init`, when the module list is known.
+ */
+export const byPack = (full, free) => () => (jb2aFreeOnly() ? free : full);
+
+/**
  * True when both are active, going by the module list alone. This can be asked in `init`,
  * before Sequencer has put its API in place: setting defaults and the settings window use it.
  */
