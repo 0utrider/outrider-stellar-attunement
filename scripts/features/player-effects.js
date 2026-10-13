@@ -38,7 +38,7 @@ export const playerEffects = {
 
     // A player saved their choices, the GM cleared them, or a player was assigned another
     // character. The choices are all this module keeps on a User, so any change under its
-    // flags counts (a removed key arrives as "-=<key>" on v13).
+    // flags counts (a removed key can arrive as "-=<key>").
     hooks.on("updateUser", (_user, changes) => {
       if (!playerEffectsOn()) return;
       const flags = Object.keys(changes.flags ?? {}).some((key) => key === MODULE_ID || key === `-=${MODULE_ID}`);

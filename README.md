@@ -32,15 +32,31 @@ With **Follow cycle and disharmony actions** on (the default), the module reads 
 
 The rules change the state once the action is complete. Eclipse Strike, Hampering Flare, Clinging Flare, Shattering Impact, Flicker Strike, Solar Barrage and Unstable Flare include Strikes, so post the action's card first and then roll its Strikes: the state changes after them (Solar Barrage after three, Flicker Strike after two or after a first Strike that misses), when the turn moves on, or after two minutes. The Strikes roll, and animate, in the attunement the action started in. Changing the attunement by hand in the meantime cancels the change.
 
+Three more, each with its own option under the same heading:
+
+- **Requirements by attunement.** Black Hole and Singularity need Graviton, Supernova and Big Bang need Photon. Used in the other attunement, the card gives a warning and nothing changes.
+- **Stellar Shield Collapse.** Posting its card asks whether to use Black Hole (Graviton) or Supernova (Photon), when the Solarian has that feat; yes posts that feat's card. The 10-minute limit is not tracked.
+- **Halt Cycle.** With a Cycling Crystal, a critical hit inside a cycle action with the solar weapon or solar flare the crystal is set on asks whether to stay in the current attunement. The once per 10 minutes is not tracked.
+
+**Ask to attune on initiative** (on by default): when an Unattuned Solarian rolls initiative (from the sheet, the tracker or Roll All), a window asks which aspect, once per encounter. It asks the user who rolled, or the Solarian's player when the GM rolled and that player is online. Closing it changes nothing.
+
 Rolls made from the card (damage, saves) do not count. Posting the same card again to show it to the table counts as using it again. The change is made by the client of the user who posted the card, so it happens once however many users are connected.
 
 ## Art convention
 
 Default art (unattuned) = the prototype token image. Graviton = `<base>-1.<ext>`, Photon = `<base>-2.<ext>`.
 e.g. `tokens/solarian.webp` → `solarian-1.webp` / `solarian-2.webp`.
-Override per actor: right-click the Token HUD button, or `api.configure(actor)`. A field left blank uses the default for that state, and blanking a field you had filled removes that override.
+Override per actor: right-click the Token HUD button, or `api.configure(actor)`. The dialog has token art and portrait side by side. A field left blank uses the default for that state, and blanking a field you had filled removes that override.
 
 The module writes each state's art to the prototype token, so new tokens come out right. It keeps a note of the original image on the actor, so Unattuned goes back to it even when only the attuned states have overrides. If you change the prototype token image yourself, that becomes the new original.
+
+### Portraits
+
+With **Swap the actor portrait** on (off by default), the actor's portrait follows the attunement by the same convention: `<name>-portrait.webp`, `<name>-portrait-1.webp`, `<name>-portrait-2.webp`, or any base name with `-1` and `-2` added. The art dialog has a portrait override per state beside the token one. A portrait file that does not exist is not used: the current portrait stays. Unattuned puts the base back, and a portrait you set by hand becomes the new base.
+
+### Staying on the base art
+
+**Swap token art** (on by default) can be turned off for the world: token art is then left as it is. Per actor, the art dialog's **Keep base art** row has a box for the token and one for the portrait: that actor stays on its base art in every state. Overrides are kept, not used, and nothing needs a reload.
 
 A world that used overrides on 1.0.x may already have lost the original (1.0.x kept no note). Set the prototype token image once, or fill in the Unattuned override, and it is remembered from then on.
 
@@ -81,7 +97,7 @@ Switching removes this module's border first. It also removes any other JB2A tok
 
 ### During the token's turn
 
-Foundry v13+ draws the combat turn marker on the interface layer, above all token art, so it covers a behind-the-token border. The **Border during the token's turn** setting chooses what to do while it's that token's turn:
+Foundry draws the combat turn marker on the interface layer, above all token art, so it covers a behind-the-token border. The **Border during the token's turn** setting chooses what to do while it's that token's turn:
 
 - **Above** (default): draw the border over the marker. This also draws it over the portrait.
 - **Expand**: grow the border to wrap just outside the turn marker (scale × the marker's size ratio, 1.5 by default), then shrink it back when the turn passes.

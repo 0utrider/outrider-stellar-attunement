@@ -7,8 +7,8 @@ import { offerRing, ringChanges } from "./ring.js";
 import { syncWorldContent } from "./world-content.js";
 
 /**
- * Attunement state, the cycle, token art, the Token HUD button and the public API.
- * Ring colors (features/ring.js) ride along with the art: one token update carries both.
+ * Attunement state, the cycle, token art, the actor portrait, the Token HUD button and the
+ * public API. Ring colors (features/ring.js) ride along with the art: one token update carries both.
  *
  * Cycle:  unattuned -> graviton
  *         graviton/photon (1st click) -> the opposite attunement
@@ -71,10 +71,67 @@ function artFor(actor, state) {
   return base ? base.replace(ART_FILE, `$1${SUFFIX[state]}$2`) : null;
 }
 
-/** Token art and, with the option on, token ring colors for this state. One update per token. */
+/** Per-actor opt-outs: { token, portrait }, true to stay on the base art in every state. */
+function keepBase(actor) {
+  const keep = actor.getFlag(MODULE_ID, "keepBase") ?? {};
+  return { token: keep.token === true, portrait: keep.portrait === true };
+}
+
+// Actor portrait. Same convention as the token art, on `actor.img`: the base, `-1` for Graviton,
+// `-2` for Photon (`Name-portrait.webp`, `Name-portrait-1.webp`, ...). `flags.<id>.portrait`
+// keeps the record, as `art` does for tokens: `base` is the portrait before the module's first
+// change, `last` what it wrote most recently. A portrait that is not `last` was set by someone
+// else and is the new base, so the suffixes never stack.
+
+/** The portrait the convention builds on, or null. */
+function portraitBase(actor) {
+  const img = actor._source?.img ?? actor.img;
+  const record = actor.getFlag(MODULE_ID, "portrait");
+  if (record && record.last === img) return record.base ?? null;
+  return unsuffixed(img);
+}
+
+function portraitFor(actor, state) {
+  const custom = actor.getFlag(MODULE_ID, "portraits")?.[state];
+  if (custom) return custom;
+  const base = portraitBase(actor);
+  return base ? base.replace(ART_FILE, `$1${SUFFIX[state]}$2`) : null;
+}
+
+/** File checks, by path, for this page: a missing portrait leaves the current one in place. */
+const found = new Map();
+
+/**
+ * Whether a file is there: one HEAD request per path per page load. A request that cannot be
+ * made (another host that does not allow it) counts as found, so remote storage keeps working.
+ */
+function fileExists(path) {
+  if (!found.has(path)) {
+    const url = /^(https?:|data:|blob:)/i.test(path) ? path : foundry.utils.getRoute(path);
+    found.set(path, fetch(url, { method: "HEAD", cache: "no-store" }).then((response) => response.ok, () => true));
+  }
+  return found.get(path);
+}
+
+/** The portrait to write for this state, or null to leave `actor.img` alone. */
+async function portraitChange(actor, state) {
+  if (actor.isToken || !actor.isOwner || !game.settings.get(MODULE_ID, "portraitArt")) return null;
+  const keep = keepBase(actor).portrait;
+  const want = portraitFor(actor, keep ? "unattuned" : state);
+  const img = actor._source?.img ?? actor.img;
+  if (!want || want === img || !(await fileExists(want))) return null;
+  return { img: want, [`flags.${MODULE_ID}.portrait`]: { base: portraitBase(actor), last: want } };
+}
+
+/**
+ * Token art and, with the option on, token ring colors for this state (one update per token),
+ * then the prototype token and the portrait (one actor update). With token art swaps off in the
+ * world, the art is left as it is; with the actor's "keep base art" set, it goes to the base.
+ */
 async function applyLook(actor, state) {
   const base = knownBase(actor);
-  const src = artFor(actor, state);
+  const swapTokens = game.settings.get(MODULE_ID, "tokenArt");
+  const src = swapTokens ? artFor(actor, keepBase(actor).token ? "unattuned" : state) : null;
   const changesFor = (token) => {
     const changes = ringChanges(token, actor, state);
     if (src && token._source.texture.src !== src) changes["texture.src"] = src;
@@ -104,10 +161,12 @@ async function applyLook(actor, state) {
   }
 
   // Prototype last: the system may propagate it to canvas tokens on its own. The record of
-  // the original art goes in with the same write.
+  // the original art goes in with the same write, and the portrait with it.
+  const update = (await portraitChange(actor, state)) ?? {};
   if (src && actor.prototypeToken.texture.src !== src && actor.isOwner) {
-    await actor.update({ "prototypeToken.texture.src": src, [`flags.${MODULE_ID}.art`]: { base, last: src } });
+    Object.assign(update, { "prototypeToken.texture.src": src, [`flags.${MODULE_ID}.art`]: { base, last: src } });
   }
+  if (!foundry.utils.isEmpty(update)) await actor.update(update);
 }
 
 // Public API
@@ -153,26 +212,49 @@ export async function cycle(actorLike) {
   return setAttunement(actor, nextState(actor, current), { fromCycle: true });
 }
 
-/** Per-actor image overrides (for art that doesn't follow the -1/-2 convention). */
+/** Per-actor art: overrides for token art and portrait (for art that does not follow the -1/-2 convention), and the opt-outs. */
 export async function configure(actorLike) {
   const actor = resolveActor(actorLike);
   if (!actor) return ui.notifications.warn("Select a token or assign a character first.");
-  const imgs = actor.getFlag(MODULE_ID, "images") ?? {};
+  const tokens = actor.getFlag(MODULE_ID, "images") ?? {};
+  const portraits = actor.getFlag(MODULE_ID, "portraits") ?? {};
+  const keep = keepBase(actor);
+  const portraitsOn = game.settings.get(MODULE_ID, "portraitArt");
   // Paths come from actor flags and file names: escaped before they go into markup.
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+  const field = (kind, s, value, placeholder) => `
+        <input type="text" name="${kind}.${s}" value="${esc(value)}" placeholder="${esc(placeholder)}" aria-label="${kind === "token" ? "Token" : "Portrait"}: ${LABELS[s]}">
+        <button type="button" class="osa-browse" data-target="${kind}.${s}" aria-label="Browse"><i class="fa-solid fa-file-import"></i></button>`;
   const rows = STATES.map((s) => `
     <div class="form-group">
       <label>${LABELS[s]}</label>
-      <div class="form-fields">
-        <input type="text" name="${s}" value="${esc(imgs[s])}" placeholder="${esc(artFor(actor, s))}">
-        <button type="button" class="osa-browse" data-target="${s}"><i class="fa-solid fa-file-import"></i></button>
-      </div>
+      <div class="form-fields">${field("token", s, tokens[s], artFor(actor, s))}${field("portrait", s, portraits[s], portraitFor(actor, s))}</div>
     </div>`).join("");
+  const box = (name, label, checked) => `<label class="checkbox"><input type="checkbox" name="keep.${name}"${checked ? " checked" : ""}> ${label}</label>`;
+  const notes = [
+    game.settings.get(MODULE_ID, "tokenArt") ? null : "Token art swaps are off in this world.",
+    portraitsOn ? null : "Portrait swaps are off in this world: the portrait fields are kept for when they are turned on.",
+  ].filter(Boolean).map((note) => `<p class="hint">${note}</p>`).join("");
 
   const result = await foundry.applications.api.DialogV2.prompt({
     window: { title: `Stellar Attunement Art - ${actor.name}` },
-    content: `<p class="hint">Leave blank to use the default: base art, <code>-1</code> for Graviton, <code>-2</code> for Photon.</p>${rows}`,
-    ok: { label: "Save", callback: (_e, button) => Object.fromEntries(STATES.map((s) => [s, button.form.elements[s].value.trim()])) },
+    classes: ["osa-art"],
+    position: { width: 640 },
+    content: `<p class="hint">Token art on the left, portrait on the right. Leave blank to use the default: base art, <code>-1</code> for Graviton, <code>-2</code> for Photon. A portrait file that does not exist is not used.</p>${notes}
+    <div class="form-group osa-art-head"><label></label><div class="form-fields"><span>Token</span><span>Portrait</span></div></div>
+    ${rows}
+    <div class="form-group">
+      <label>Keep base art</label>
+      <div class="form-fields">${box("token", "Token", keep.token)}${box("portrait", "Portrait", keep.portrait)}</div>
+      <p class="hint">Stay on the base art in every state. The overrides above are kept, not used.</p>
+    </div>`,
+    ok: {
+      label: "Save",
+      callback: (_e, button) => {
+        const read = (kind) => Object.fromEntries(STATES.map((s) => [s, button.form.elements[`${kind}.${s}`].value.trim()]));
+        return { token: read("token"), portrait: read("portrait"), keep: { token: button.form.elements["keep.token"].checked, portrait: button.form.elements["keep.portrait"].checked } };
+      },
+    },
     render: (_e, dialog) => {
       dialog.element.querySelectorAll(".osa-browse").forEach((btn) =>
         btn.addEventListener("click", () => {
@@ -189,23 +271,36 @@ export async function configure(actorLike) {
   if (!result) return;
   // setFlag merges into the stored object, so a blanked field would keep its old value.
   // Clear the whole flag first, then write what is left.
-  const cleaned = Object.fromEntries(Object.entries(result).filter(([, v]) => v));
-  if (actor.getFlag(MODULE_ID, "images")) await actor.unsetFlag(MODULE_ID, "images");
-  if (Object.keys(cleaned).length) await actor.setFlag(MODULE_ID, "images", cleaned);
+  for (const [flag, values] of [["images", result.token], ["portraits", result.portrait]]) {
+    const cleaned = Object.fromEntries(Object.entries(values).filter(([, v]) => v));
+    if (actor.getFlag(MODULE_ID, flag)) await actor.unsetFlag(MODULE_ID, flag);
+    if (Object.keys(cleaned).length) await actor.setFlag(MODULE_ID, flag, cleaned);
+  }
+  if (result.keep.token || result.keep.portrait || actor.getFlag(MODULE_ID, "keepBase")) await actor.setFlag(MODULE_ID, "keepBase", result.keep);
   const state = getState(actor);
   if (state) await applyLook(actor, state);
 }
 
 /** `game.modules.get(id).api`: the entry points macros and other modules call. */
 function installApi() {
-  game.modules.get(MODULE_ID).api = { cycle, setAttunement, configure, getState: (a) => getState(resolveActor(a)), artFor, reconcileScene, playAttack, syncWorldContent };
+  game.modules.get(MODULE_ID).api = { cycle, setAttunement, configure, getState: (a) => getState(resolveActor(a)), artFor, portraitFor, reconcileScene, playAttack, syncWorldContent };
 }
 
 export const attunement = {
   id: "attunement",
   label: "Attunement",
-  hint: "Cycling the attunement, the token art that follows it, and the Token HUD button.",
+  hint: "Cycling the attunement, the token art and portrait that follow it, and the Token HUD button.",
   settings: {
+    tokenArt: {
+      name: "Swap token art",
+      hint: "Change the token art with the attunement (base, -1, -2, or the actor's overrides). Off: token art is left as it is. An actor can also keep its base token art (right-click the Token HUD button).",
+      scope: "world", type: Boolean, default: true,
+    },
+    portraitArt: {
+      name: "Swap the actor portrait",
+      hint: "Change the actor's portrait with the attunement, by the same convention (portrait.webp, portrait-1.webp, portrait-2.webp) or the actor's overrides. A file that does not exist is not used. Unattuned puts the base back. An actor can also keep its base portrait.",
+      scope: "world", type: Boolean, default: false,
+    },
     allScenes: {
       name: "Update tokens in all scenes",
       hint: "Swap art (and ring colors, when that option is on) on linked tokens in every scene, not just the one in view.",

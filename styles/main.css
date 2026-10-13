@@ -186,3 +186,8 @@
 /* Token ring offer (features/ring.js): four buttons, two to a row. */
 .osa-ring-offer .form-footer { flex-wrap: wrap; }
 .osa-ring-offer .form-footer button { flex: 1 1 45%; }
+
+/* Art dialog: token and portrait fields side by side */
+.osa-art .form-fields input[type="text"] { flex: 1; min-width: 0; }
+.osa-art .osa-art-head .form-fields span { flex: 1; font-weight: bold; text-align: center; }
+.osa-art .form-fields label.checkbox { display: flex; align-items: center; gap: 0.25rem; flex: 1; }
