@@ -98,7 +98,7 @@ function portraitFor(actor, state) {
   return base ? base.replace(ART_FILE, `$1${SUFFIX[state]}$2`) : null;
 }
 
-/** File checks, by path, for this page: a missing portrait leaves the current one in place. */
+/** File checks, by path, for this page: a missing token art or portrait file leaves the current one in place. */
 const found = new Map();
 
 /**
@@ -131,7 +131,9 @@ async function portraitChange(actor, state) {
 async function applyLook(actor, state) {
   const base = knownBase(actor);
   const swapTokens = game.settings.get(MODULE_ID, "tokenArt");
-  const src = swapTokens ? artFor(actor, keepBase(actor).token ? "unattuned" : state) : null;
+  let src = swapTokens ? artFor(actor, keepBase(actor).token ? "unattuned" : state) : null;
+  // A file that is not there would leave the token on Foundry's fallback image: keep the current art.
+  if (src && !(await fileExists(src))) src = null;
   const changesFor = (token) => {
     const changes = ringChanges(token, actor, state);
     if (src && token._source.texture.src !== src) changes["texture.src"] = src;

@@ -1,5 +1,5 @@
 import { LABELS, MODULE_ID, OPTION, STATES } from "../constants.js";
-import { effectValue } from "../effect-choices.js";
+import { effectValue, playerFor } from "../effect-choices.js";
 import { featureHooks } from "../feature-hooks.js";
 import { animationModulesActive, byPack, sequencerReady } from "../sequencer.js";
 import { getState } from "../state.js";
@@ -10,8 +10,9 @@ import { systemFlags } from "../system.js";
  * Automated Animations can't attach to them. Instead we watch attack-roll chat cards.
  *
  * Which animation plays comes through effectValue (scripts/effect-choices.js). An attack
- * follows whoever rolled it, as dice do: the world settings, or the roller's own choices when
- * players may make their own, whoever owns the token.
+ * follows the Solarian's player, as its border and ring do (`playerFor`), whoever rolled it, so
+ * a GM rolling for a player's character plays that player's choices. An actor with no single
+ * player follows whoever rolled.
  */
 
 /**
@@ -66,7 +67,8 @@ export async function playAttack(message) {
   const hit = attackFromMessage(message);
   if (!hit || hit.state === "unattuned") return;
   const exists = (value) => Sequencer.Database.entryExists(value);
-  const path = String(effectValue(`attack.${hit.slug}.${hit.state}`, message.author, exists) ?? "").trim();
+  const user = playerFor(message.actor) ?? message.author;
+  const path = String(effectValue(`attack.${hit.slug}.${hit.state}`, user, exists) ?? "").trim();
   if (!path) return;
   if (!Sequencer.Database.entryExists(path)) return console.warn(`${MODULE_ID} | JB2A entry not found: ${path}`);
 

@@ -59,7 +59,7 @@ export async function clearChoices(users = playersWithChoices()) {
 /**
  * The player whose choices a token of this actor shows, or null for the GM's settings.
  *
- * A border or a ring sits on a token, so it follows the token's player: the one player who has
+ * Borders, rings and attack animations follow the token's player: the one player who has
  * the actor as their assigned character, else the only player who owns it. An actor only the
  * GM owns, or one that several players own with none of them assigned, has no single player to
  * follow and uses the GM's settings. An unlinked token goes by the actor it was made from.
@@ -79,8 +79,9 @@ export function playerFor(actor) {
  * player has stored a usable choice of their own.
  *
  * @param {string} key        The setting key ("border.photon", "ring.graviton.color", ...).
- * @param {User|null} user    The player to resolve for (`playerFor(actor)`, or a message's
- *                            author). Null or a GM: the world setting.
+ * @param {User|null} user    The player to resolve for (`playerFor(actor)`, or for an attack
+ *                            with no single player, the message's author). Null or a GM: the
+ *                            world setting.
  * @param {Function} [valid]  For a text setting, says whether a player's value can be used.
  */
 export function effectValue(key, user, valid) {

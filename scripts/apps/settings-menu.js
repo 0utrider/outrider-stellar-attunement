@@ -389,7 +389,7 @@ export class StellarAttunementSettings extends ApplicationV2 {
     legend.textContent = "Your effects";
     const hint = document.createElement("p");
     hint.className = "hint";
-    hint.textContent = "Your own choices, and everyone sees them. Borders and ring colors show on the token of your assigned character, or of a character only you own. Attack animations play for the attacks you roll. A blank field uses the GM's setting, shown in the field. The crossed circle sets a field to none: no border, no animation, or the token's own ring color.";
+    hint.textContent = "Your own choices, and everyone sees them. Borders, ring colors and attack animations follow your assigned character, or a character only you own, whoever rolls for it. A blank field uses the GM's setting, shown in the field. The crossed circle sets a field to none: no border, no animation, or the token's own ring color.";
     fieldset.append(legend, hint, ...player.groups.map(StellarAttunementSettings.#box));
     return fieldset;
   }

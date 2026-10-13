@@ -7,7 +7,7 @@
 
 </div>
 
-SF2e Solarian helper. Cycles Stellar Attunement and keeps token art in sync.
+SF2e Solarian helper. Cycles Stellar Attunement and keeps token art (and, if you want, the actor portrait) in sync. Requires Foundry v14 or later.
 
 <p align="center"><img src="docs/demo-jb2a.webp" alt="A Solarian token cycling through Stellar Attunement, with the module's JB2A token border and attack animation playing" width="480"></p>
 
@@ -46,13 +46,14 @@ Rolls made from the card (damage, saves) do not count. Posting the same card aga
 
 Default art (unattuned) = the prototype token image. Graviton = `<base>-1.<ext>`, Photon = `<base>-2.<ext>`.
 e.g. `tokens/solarian.webp` → `solarian-1.webp` / `solarian-2.webp`.
+A token art file that does not exist is not used: the token keeps its current art (an iconic with no `-1` or `-2` file stays as it is).
 Override per actor: right-click the Token HUD button, or `api.configure(actor)`. The dialog has token art and portrait side by side. A field left blank uses the default for that state, and blanking a field you had filled removes that override.
 
 The module writes each state's art to the prototype token, so new tokens come out right. It keeps a note of the original image on the actor, so Unattuned goes back to it even when only the attuned states have overrides. If you change the prototype token image yourself, that becomes the new original.
 
 ### Portraits
 
-With **Swap the actor portrait** on (off by default), the actor's portrait follows the attunement by the same convention: `<name>-portrait.webp`, `<name>-portrait-1.webp`, `<name>-portrait-2.webp`, or any base name with `-1` and `-2` added. The art dialog has a portrait override per state beside the token one. A portrait file that does not exist is not used: the current portrait stays. Unattuned puts the base back, and a portrait you set by hand becomes the new base.
+With **Swap the actor portrait** on (off by default), the actor's portrait follows the attunement by the same convention: `<name>-portrait.webp`, `<name>-portrait-1.webp`, `<name>-portrait-2.webp`, or any base name with `-1` and `-2` added. The art dialog has a portrait override per state beside the token one. As with token art, a portrait file that does not exist is not used: the current portrait stays. Unattuned puts the base back, and a portrait you set by hand becomes the new base.
 
 ### Staying on the base art
 
@@ -155,8 +156,8 @@ The GM's settings stay the default. A field a player leaves blank uses the GM's 
 
 Whose choice applies:
 
-- A border or a ring sits on a token, so it follows the token's player: the player who has that actor as their assigned character, else the only player who owns it. An actor only the GM owns, or one several players own with none of them assigned, uses the GM's settings.
-- An attack animation follows whoever rolled the attack, as dice do, whoever owns the token.
+- Borders, rings and attack animations follow the token's player: the player who has that actor as their assigned character, else the only player who owns it. A GM rolling a Strike for a player's character plays that player's attack animation.
+- An actor only the GM owns, or one several players own with none of them assigned, uses the GM's settings for its border and ring. Its attack animations follow whoever rolled.
 
 The choices are stored on the player's own User document, the way Dice So Nice stores its appearance settings. When a player saves, the active GM's client redraws that player's borders and rings (the player's own client, if no GM is online). Turning the switch off puts the GM's effects back at once; what players saved is kept and ignored until the switch is on again.
 
@@ -174,6 +175,8 @@ The default border and attack paths depend on which JB2A pack is active: the Pat
 
 **Attunement**
 
+- **Swap token art** (world, default on)
+- **Swap the actor portrait** (world, default off)
 - **Update tokens in all scenes** (world, default on)
 - **Token HUD button** (per browser, default on)
 - **Show notification** (per browser, default off)
@@ -181,6 +184,9 @@ The default border and attack paths depend on which JB2A pack is active: the Pat
 **Actions**
 
 - **Follow cycle and disharmony actions** (world, default on)
+- **Offer Halt Cycle** (world, default on; needs the option above)
+- **Offer Black Hole or Supernova on Stellar Shield Collapse** (world, default on; needs the option above)
+- **Ask to attune on initiative** (world, default on)
 
 **Token borders**
 
@@ -209,7 +215,7 @@ The default border and attack paths depend on which JB2A pack is active: the Pat
 
 - **Unattune when the encounter ends** (world, default on)
 
-Setting keys are the same as in 1.0.x, so a world keeps its values. Two defaults changed in 1.1.0 (the turn marker behavior and the ring option, above): a world that never saved those two settings follows the new defaults. 1.1.1 adds **Follow cycle and disharmony actions**, on by default, so a world that updates starts following action cards.
+Setting keys are the same as in 1.0.x, so a world keeps its values. Two defaults changed in 1.1.0 (the turn marker behavior and the ring option, above): a world that never saved those two settings follows the new defaults. 1.1.1 adds **Follow cycle and disharmony actions** with its two sub-options and **Ask to attune on initiative**, all on by default, so a world that updates starts following action cards and asks on initiative. It also adds **Swap token art** (on, so token art swaps as before) and **Swap the actor portrait** (off, so portraits do not change until you turn it on).
 
 ### Picking an animation
 
@@ -219,6 +225,8 @@ With Sequencer and JB2A active, each border and attack field has two buttons bes
 - **Play** shows the animation on the canvas, for you alone and without storing anything: a border on your selected token (else the first Solarian on the scene) at the scale and layer in the form, an attack from that token to your target, or six squares to the right with no target.
 
 ## Install
+
+Foundry v14 or later, Starfinder 2e. Sequencer and JB2A (free or Patreon) for borders, attack animations and the picker.
 
 Paste this manifest URL into **Add-on Modules > Install Module**:
 
